@@ -1,0 +1,6 @@
+attributes:
+  test:
+    value: "test"
+    label: "test"
+    weight: 1
+    type: "text"

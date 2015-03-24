@@ -1,0 +1,42 @@
+# Plugin name
+name: mellanox_plugin
+
+# Human-readable name for your plugin
+title: Mellanox Openstack features
+
+# Plugin version
+version: 0.1.1
+
+# Description
+description: Enable features over Mellanox hardware
+
+# Required fuel version
+fuel_version: ['6.1']
+
+# Specify license of your plugin
+licenses: ['Apache License Version 2.0']
+
+# Specify author or company name
+authors: ['gilmeir@mellanox.com', 'aviramb@mellanox.com']
+
+# A link to the plugin's page
+homepage: 'https://github.com/stackforge/fuel-plugin-mellanox/'
+
+# Groups of nodes on which the plugin takes effect
+groups: ['storage::cinder', 'hypervisor']
+
+# The plugin is compatible with releases in the list
+releases:
+  - os: ubuntu
+    version: 2014.2-6.1
+    mode: ['ha', 'multinode']
+    deployment_scripts_path: deployment_scripts/
+    repository_path: repositories/ubuntu
+  - os: centos
+    version: 2014.2-6.1
+    mode: ['ha', 'multinode']
+    deployment_scripts_path: deployment_scripts/
+    repository_path: repositories/centos
+
+# Version of plugin package
+package_version: '2.0.0'
