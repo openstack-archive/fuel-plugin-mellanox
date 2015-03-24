@@ -1,0 +1,91 @@
+# This is a workaround: during the plugin plre_deployment stage
+# there is no symbolic link from astute.yaml to <role>.yaml.
+# Since the data that the plugin uses is common to all <role>.yaml files,
+# this script links astute.yaml to any <role>.yaml on each node.
+- role: '*'
+  stage: pre_deployment
+  type: shell
+  parameters:
+    cmd: ./link_astute_file.sh
+    timeout: 5
+# Add relevant settings for Mellanox manifests to mellanox_plugin section in
+# hiera, to make the data easily accessible and independent of astute.yaml
+- role: '*'
+  stage: pre_deployment
+  type: shell
+  parameters:
+    cmd: ./mellanox_settings.py
+    timeout: 10
+# Install OFED
+- role: '*'
+  stage: pre_deployment
+  type: puppet
+  parameters:
+    puppet_manifest: puppet/manifests/ofed.pp
+    puppet_modules: puppet/modules:/etc/puppet/modules
+    timeout: 300
+# Configure number of VFs according to the user decision:
+# change modprobe file + change the configuration in the FW +
+# IOMMU in grub file
+- role: '*'
+  stage: pre_deployment
+  type: shell
+  parameters:
+    cmd: bash -x ./sriov.sh
+    timeout: 360
+# Reboot due to OFED installation / IOMMU configuration
+- role: '*'
+  stage: pre_deployment
+  type: reboot
+  parameters:
+    timeout: 600
+# Rename iSER interface
+- role: '*'
+  stage: pre_deployment
+  type: puppet
+  parameters:
+    puppet_manifest: puppet/manifests/iser_rename.pp
+    puppet_modules: puppet/modules:/etc/puppet/modules
+    timeout: 360
+# Execute post_deployment manifest for each role
+- role: ['controller', 'primary-controller']
+  stage: post_deployment
+  type: puppet
+  parameters:
+    puppet_manifest: puppet/manifests/controller.pp
+    puppet_modules: puppet/modules:/etc/puppet/modules
+    timeout: 360
+- role: ['compute']
+  stage: post_deployment
+  type: puppet
+  parameters:
+    puppet_manifest: puppet/manifests/compute.pp
+    puppet_modules: puppet/modules:/etc/puppet/modules
+    timeout: 360
+- role: ['cinder']
+  stage: post_deployment
+  type: puppet
+  parameters:
+    puppet_manifest: puppet/manifests/cinder.pp
+    puppet_modules: puppet/modules:/etc/puppet/modules
+    timeout: 360
+# Override the testvm with Mellanox Cirros TestVM
+- role: ['controller', 'primary-controller']
+  stage: post_deployment
+  type: shell
+  parameters:
+    cmd: ruby delete_images.rb
+    timeout: 180
+- role: ['controller', 'primary-controller']
+  stage: post_deployment
+  type: puppet
+  parameters:
+    puppet_manifest: puppet/manifests/testvm.pp
+    puppet_modules: puppet/modules:/etc/puppet/modules
+    timeout: 30
+- role: ['controller', 'primary-controller']
+  stage: post_deployment
+  type: shell
+  parameters:
+    cmd: ruby /etc/puppet/modules/osnailyfacter/modular/astute/upload_cirros.rb
+    timeout: 180
