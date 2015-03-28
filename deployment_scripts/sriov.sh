@@ -1,0 +1,169 @@
+#!/bin/bash -x
+# Copyright 2015 Mellanox Technologies, Ltd
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+# implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+readonly SCRIPT_DIR=$(dirname "$0")
+source $SCRIPT_DIR/common
+
+function get_port_type() {
+  if [ $DRIVER == 'mlx4_en' ]; then
+    port_type=2
+  elif [ $DRIVER == 'eth_ipoib' ]; then
+    port_type=1
+  fi
+  echo $port_type
+}
+
+function get_num_probe_vfs () {
+  if [ $ISER == true ] && [ $DRIVER == 'mlx4_en' ]; then
+    probe_vfs=1
+  else
+    probe_vfs=0
+  fi
+  echo $probe_vfs
+}
+
+function calculate_total_vfs () {
+  # validate num of vfs is an integer, 0 <= num <= 64
+  if [ "${USER_NUM_OF_VFS}" -ne "${USER_NUM_OF_VFS}" ] 2>/dev/null ||
+      [ "${USER_NUM_OF_VFS}" -gt ${MAX_VFS} ] ||
+      [ "${USER_NUM_OF_VFS}" -lt ${MIN_VFS} ]; then
+    logger_print error "Illegal number of VFs ${USER_NUM_OF_VFS}, value
+                        should be an integer between ${MIN_VFS},${MAX_VFS}"
+    return 1
+  fi
+  num_of_vfs=${USER_NUM_OF_VFS}
+  if [ $((${USER_NUM_OF_VFS} % 2)) -eq 1 ]; then
+    let num_of_vfs="${USER_NUM_OF_VFS} + 1" # number of vfs is odd and <= 64, then +1 is legal
+  fi
+  echo ${num_of_vfs}
+}
+
+function set_modprobe_file () {
+  PROBE_VFS=`get_num_probe_vfs`
+  MLX4_CORE_FILE="/etc/modprobe.d/mlx4_core.conf"
+  PORT_TYPE=`get_port_type`
+  MLX4_CORE_STR="options mlx4_core
+                 enable_64b_cqe_eqe=0
+                 log_num_mgm_entry_size=-1
+                 port_type_array=${PORT_TYPE},${PORT_TYPE}"
+  TOTAL_VFS=$1
+  if [[ $TOTAL_VFS -gt 0 ]]; then
+    MLX4_CORE_STR="${MLX4_CORE_STR} num_vfs=${TOTAL_VFS}"
+    if [[ $PROBE_VFS -gt 0 ]]; then
+      MLX4_CORE_STR="${MLX4_CORE_STR} probe_vf=${PROBE_VFS}"
+    fi
+  fi
+  echo ${MLX4_CORE_STR} > ${MLX4_CORE_FILE}
+}
+
+function set_kernel_params () {
+  NEW_KERNEL_PARAMS="intel_iommu=on"
+  if [ "$DISTRO" == "redhat" ]; then
+    grub_file='/boot/grub/grub.conf'
+    kernel_line=`egrep 'kernel\s+/vmlinuz' ${grub_file} | grep -v '#'`
+  elif [ "$DISTRO" == "ubuntu" ]; then
+    grub_file='/boot/grub/grub.cfg'
+    kernel_line=$(echo "$(egrep 'linux\s+/vmlinuz' ${grub_file} | grep -v '#')" | head -1)
+  fi
+
+  if [[ $? -ne 0 ]]; then
+    echo "Couldn't find kernel line in grub file" >&2 && return 1
+  fi
+  if ! grep -q 'intel_iommu' ${grub_file} ; then
+    line_num=$(echo "$(grep -n "${kernel_line}" ${grub_file} |cut -f1 -d: )" | head -1)
+    new_kernel_line="${kernel_line} ${NEW_KERNEL_PARAMS}"
+    # delete original line
+    sed -i "${line_num}d" ${grub_file}
+    # insert the corrected line on the same line number
+    sed -i "${line_num}i\ ${new_kernel_line}" ${grub_file}
+  fi
+}
+
+function burn_vfs_in_fw () {
+  total_vfs=$1
+  # required for mlxconfig to discover mlnx devices
+  service openibd start &>/dev/null
+  service mst start &>/dev/null
+  devices=$(mst status | grep pciconf | awk '{print $1}')
+  failed=false
+  for dev in $devices; do
+    logger_print debug "device=$dev"
+    flint -d $dev dc | grep -i sriov | grep -i -q true &> /dev/null
+    sriov_enabled=$?
+    current_num_of_vfs=`flint -d $dev dc | grep -i total_vfs | awk '{print $3}'`
+    if [ $sriov_enabled -eq 0 ] 2>/dev/null; then
+      logger_print debug "Detected SR-IOV is already enabled"
+    else
+      logger_print debug "Detected SR-IOV is disabled"
+    fi
+    if [ "$total_vfs" -ne "$current_num_of_vfs" ] 2>/dev/null; then
+      logger_print debug "Current allowed number of VFs is ${current_num_of_vfs}, required number is ${total_vfs}"
+      mlxconfig -y -d $dev s SRIOV_EN=1 NUM_OF_VFS=$total_vfs 2>&1 >/dev/null
+      if [ $? -ne 0 ]; then
+        failed=true
+        logger_print error "Failed changing number of VFs in FW for HCA ${dev}"
+      fi
+    else
+      logger_print debug "Current number of VFs is correctly set to ${current_num_of_vfs} in FW."
+    fi
+  done
+  service mst stop &>/dev/null
+  if [ "$failed" == true ]; then
+    return 1
+  fi
+}
+
+function configure_sriov () {
+  total_vfs=$1
+  logger_print info "Configuring ${total_vfs} virtual functions
+                     (only even number is currently supported)"
+  set_modprobe_file $total_vfs &&
+  set_kernel_params &&
+  burn_vfs_in_fw $total_vfs
+  return $?
+}
+
+#################
+
+if [ $SRIOV == true ] ||
+    ( [ $ISER == true ] && [ $DRIVER == 'mlx4_en' ] ) ; then
+
+  # Calculate the total amount of virtual functions, based on user seclection
+  total_vfs=`calculate_total_vfs`
+  if [ -z ${total_vfs} ]; then
+    exit 1
+  fi
+
+  # Configure the total_vfs amount of virtual functions
+  configure_sriov $total_vfs
+
+  # Fallback to 16 VFs when failing to configure user's selection
+  if [ $? -ne 0 ]; then
+    fallback_num_vfs=16
+    logger_print error "Trying to fallback to ${fallback_num_vfs}"
+    set_modprobe_file $fallback_num_vfs
+    service openibd restart &> /dev/null
+    current_num_vfs=`lspci | grep -i mellanox | grep -i virtual | wc -l`
+    if [ $current_num_vfs -eq $fallback_num_vfs ]; then
+      logger_print info "Fallback to ${fallback_num_vfs} succeeded"
+    else
+      logger_print error "Failed to configure SR-IOV"
+      exit 1
+    fi
+  fi
+else
+  logger_print info "SR-IOV feature was not chosen by user, skipping VFs configuration"
+fi

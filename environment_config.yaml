@@ -1,6 +1,24 @@
 attributes:
-  test:
-    value: "test"
-    label: "test"
-    weight: 1
+  sriov:
+    value: false
+    label: "Neutron SR-IOV plugin"
+    weight: 60
+    type: "checkbox"
+    restrictions:
+      - "settings:common.libvirt_type.value != 'kvm' or not (cluster:net_provider == 'neutron' and networking_parameters:segmentation_type == 'vlan')"
+  iser:
+    value: false
+    label: "iSER protocol for volumes (Cinder)"
+    description: "High performance block storage: Cinder volumes over iSER protocol (iSCSI over RDMA). This feature requires SR-IOV capabilities in the NIC, and will use a dedicated virtual function for the storage network."
+    weight: 11
+    type: "checkbox"
+    restrictions:
+      - "settings:storage.volumes_lvm.value != true or settings:common.libvirt_type.value != 'kvm'"
+  num_of_vfs:
+    value: "16"
+    label: "Number of virtual NICs"
+    description: "Note that one virtual function will be reserved to the storage network, in case of choosing iSER."
+    weight: 70
     type: "text"
+    restrictions:
+      - "settings:mellanox_plugin.sriov.value == false"
