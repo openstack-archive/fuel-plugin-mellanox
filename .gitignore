@@ -1,0 +1,4 @@
+.build
+bootstrap/*
+repositories/*
+*.rpm

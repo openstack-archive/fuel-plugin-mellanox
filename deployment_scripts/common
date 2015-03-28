@@ -1,0 +1,34 @@
+readonly SCRIPT_NAME=`basename $0`
+
+function logger_print () {
+  priority=$1
+  msg=$2
+  logger -t $SCRIPT_NAME "${priority}: ${msg}"
+  echo $(date +"%Y-%m-%d %H:%M:%S") $SCRIPT_NAME ${priority}: ${msg} >> /var/log/mellanox_plugin.log
+}
+
+function get_mlnx_param () {
+  param="$1"
+  #val=$(python -c "import yaml; f=open('/etc/astute.yaml'); dict=yaml.load(f); f.close(); print dict['mellanox_plugin']['${param}']")
+  val=$(ruby -r hiera -r yaml -e "hiera = Hiera.new(:config => '/etc/puppet/hiera.yaml'); mlnx = hiera.lookup 'mellanox_plugin', [], {};  puts mlnx['"$param"']")
+  echo $val
+}
+
+function get_distro () {
+  if [[ -f /etc/redhat-release ]]; then
+    dist='redhat';
+  elif [[ -f /etc/debian_version ]]; then
+    dist='ubuntu';
+  else
+    logger_print error "Could not detect linux distribution"
+  fi
+  echo $dist
+}
+
+readonly DISTRO=`get_distro`
+readonly DRIVER=`get_mlnx_param driver`
+readonly SRIOV=`get_mlnx_param sriov`
+readonly USER_NUM_OF_VFS=`get_mlnx_param num_of_vfs`
+readonly ISER=`get_mlnx_param iser`
+readonly MAX_VFS=64
+readonly MIN_VFS=1
