@@ -1,11 +1,11 @@
 # Plugin name
-name: mellanox_plugin
+name: mellanox-plugin
 
 # Human-readable name for your plugin
 title: Mellanox Openstack features
 
 # Plugin version
-version: 0.1.1
+version: 0.1.5
 
 # Description
 description: Enable features over Mellanox hardware
@@ -29,12 +29,12 @@ groups: ['storage::cinder', 'hypervisor']
 releases:
   - os: ubuntu
     version: 2014.2-6.1
-    mode: ['ha', 'multinode']
+    mode: ['ha']
     deployment_scripts_path: deployment_scripts/
     repository_path: repositories/ubuntu
   - os: centos
     version: 2014.2-6.1
-    mode: ['ha', 'multinode']
+    mode: ['ha']
     deployment_scripts_path: deployment_scripts/
     repository_path: repositories/centos
 
