@@ -1,4 +1,18 @@
 #!/bin/bash
+# Copyright 2015 Mellanox Technologies, Ltd
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+# implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 readonly PLUGIN_DIR="$(dirname $0)"
 readonly DEFAULT_REPOSITORY_HOST="10.212.14.8" #TODO: Change to MLNX public repo
@@ -11,11 +25,21 @@ function download {
   FILE_TYPE=$1
   FILE_NAME=$2
   case ${FILE_TYPE} in
+    'bootstrap')
+      PREFIX_URL=mellanox_plugin/bootstrap
+      BUILD_DIR=bootstrap
+      ;;
     *)
       echo "Can't download ${FILE_NAME}. File of type ${FILE_TYPE} is not supported."
       exit 1
   esac
   wget http://${REPOSITORY_HOST}/${PREFIX_URL}/${FILE_NAME} -P ${PLUGIN_DIR}/${BUILD_DIR}
 }
+
+# download bootstrap files
+rm -rf ${PLUGIN_DIR}/bootstrap/*
+for f in `cat ${PLUGIN_DIR}/requirements-bootstrap.txt`; do
+  download bootstrap $f
+done
 
 exit 0
