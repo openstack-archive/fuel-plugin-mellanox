@@ -1,5 +1,21 @@
 #!/bin/bash
 
-# Add here any the actions which are required before plugin build
-# like packages building, packages downloading from mirrors and so on.
-# The script should return 0 if there were no errors.
+readonly PLUGIN_DIR="$(dirname $0)"
+readonly DEFAULT_REPOSITORY_HOST="10.212.14.8" #TODO: Change to MLNX public repo
+
+if [ -z "$REPOSITORY_HOST" ]; then
+  REPOSITORY_HOST=$DEFAULT_REPOSITORY_HOST
+fi
+
+function download {
+  FILE_TYPE=$1
+  FILE_NAME=$2
+  case ${FILE_TYPE} in
+    *)
+      echo "Can't download ${FILE_NAME}. File of type ${FILE_TYPE} is not supported."
+      exit 1
+  esac
+  wget http://${REPOSITORY_HOST}/${PREFIX_URL}/${FILE_NAME} -P ${PLUGIN_DIR}/${BUILD_DIR}
+}
+
+exit 0

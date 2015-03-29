@@ -1,0 +1,6 @@
+- role: '*'
+  stage: pre_deployment
+  type: shell
+  parameters:
+    cmd: echo all > /tmp/plugin.all
+    timeout: 42
