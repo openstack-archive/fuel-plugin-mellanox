@@ -1,0 +1,43 @@
+#!/bin/bash
+
+if [ "$1" == "-h" ] || [ "$1" == "--help" ]; then
+  echo "Usage: `basename $0` [environment_id|-h|--help]"
+  echo "    This script is used to reboot nodes in 'discover' status, of the given environment."
+  echo "    If no environment given, all discovered nodes will be rebooted."
+  exit 0
+fi
+
+if [ -z "$1" ]
+then
+  env=''
+else
+  env="--env $1"
+fi
+
+tmpjson=`mktemp`;
+fuel node $env --json > $tmpjson;
+ips=`python -c "import json;print '\n'.join([str(i['ip']) for i in json.load(open('$tmpjson')) if i['status'] == 'discover'])"`
+
+for ip in $ips;
+do
+ id=`python -c "import json;print '\n'.join([str(i['id']) for i in json.load(open('$tmpjson')) if i['ip'] == '$ip'])"`
+ ping -c 1 $ip > /dev/null
+ if [ $? -eq 0 ];then
+   ssh $ip reboot > /dev/null 2>&1
+   trials=20
+   echo "waiting for node-$id to go offline."
+   while ping -c 1 $ip > /dev/null && [ $trials -ne 0 ];do
+     ((trials=$trials-1))
+     sleep 1;
+   done
+   if [ $trials -eq 0 ];then
+     echo "node-$id reboot failed."
+   else
+     echo "node-$id reboot succeeded. please wait for it to boot again."
+   fi
+ else
+   echo "node-$id is already offline. please wait a few minutes or verify it is powered on."
+ fi
+done
+
+rm $tmpjson

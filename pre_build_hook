@@ -11,11 +11,21 @@ function download {
   FILE_TYPE=$1
   FILE_NAME=$2
   case ${FILE_TYPE} in
+    'bootstrap')
+      PREFIX_URL=mellanox_plugin/bootstrap
+      BUILD_DIR=bootstrap
+      ;;
     *)
       echo "Can't download ${FILE_NAME}. File of type ${FILE_TYPE} is not supported."
       exit 1
   esac
   wget http://${REPOSITORY_HOST}/${PREFIX_URL}/${FILE_NAME} -P ${PLUGIN_DIR}/${BUILD_DIR}
 }
+
+# download bootstrap files
+rm -rf ${PLUGIN_DIR}/bootstrap/*
+for f in `cat ${PLUGIN_DIR}/requirements-bootstrap.txt`; do
+  download bootstrap $f
+done
 
 exit 0
