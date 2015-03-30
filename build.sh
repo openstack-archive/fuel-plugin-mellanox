@@ -9,7 +9,7 @@ fi
 readonly TOP_DIR=`dirname $0`
 readonly TMP_DIR='/tmp'
 readonly PLUGIN_BUILDER_DIR="$TMP_DIR/fuel-plugins/fuel_plugin_builder"
-
+readonly PLUGIN_BUILDER_PACKAGE_DIR="$PLUGIN_BUILDER_DIR/dist"
 pushd $TOP_DIR > /dev/null
 
 # Clean if needed
@@ -33,8 +33,9 @@ cat specs/post.spec >> $PLUGIN_BUILDER_DIR/fuel_plugin_builder/templates/build/p
 
 # Install plugin builder
 pushd $PLUGIN_BUILDER_DIR > /dev/null
+rm -f $PLUGIN_BUILDER_PACKAGE_DIR/*
 python setup.py sdist
-pip install dist/fuel-plugin-builder-2.0.0.dev.tar.gz
+pip install $(ls -d $PLUGIN_BUILDER_PACKAGE_DIR/*)
 popd > /dev/null
 
 # Create Mellanox Plugin
