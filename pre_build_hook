@@ -29,17 +29,54 @@ function download {
       PREFIX_URL=mellanox_plugin/bootstrap
       BUILD_DIR=bootstrap
       ;;
+    'rpm')
+      PREFIX_URL=mellanox_plugin/repositories/centos/Packages
+      BUILD_DIR=repositories/centos/Packages
+      ;;
+    'deb')
+      PREFIX_URL=mellanox_plugin/repositories/ubuntu
+      BUILD_DIR=repositories/ubuntu
+      ;;
     *)
       echo "Can't download ${FILE_NAME}. File of type ${FILE_TYPE} is not supported."
       exit 1
   esac
-  wget http://${REPOSITORY_HOST}/${PREFIX_URL}/${FILE_NAME} -P ${PLUGIN_DIR}/${BUILD_DIR}
+  URL="http://${REPOSITORY_HOST}/${PREFIX_URL}/${FILE_NAME}"
+  DEST_DIR="${PLUGIN_DIR}/${BUILD_DIR}"
+  wget ${URL} -P ${DEST_DIR}
+  if [ $? -ne 0 ]; then
+    echo "Failed fetching package from: ${URL} to ${DEST_DIR}" >&2
+  fi
 }
 
-# download bootstrap files
-rm -rf ${PLUGIN_DIR}/bootstrap/*
-for f in `cat ${PLUGIN_DIR}/requirements-bootstrap.txt`; do
-  download bootstrap $f
-done
 
-exit 0
+function get_packages() {
+  file_type=$1
+  directory=$2
+  files=$3
+  rm -rf $directory
+  mkdir $directory
+  for f in $files; do
+    download $file_type $f
+  done
+}
+
+rpm_dir="${PLUGIN_DIR}/repositories/centos/Packages/"
+rpm_files="cirros-testvm-mellanox-0.3.2-3.el6.x86_64.rpm
+           eswitchd-0.11-3.el6.x86_64.rpm
+           mlnx-ofed-fuel-2.3-2.0.6.el6.x86_64.rpm
+           redhat-rpm-config-9.0.3-42.el6.centos.noarch.rpm"
+get_packages "rpm" "$rpm_dir" "$rpm_files"
+
+deb_dir="${PLUGIN_DIR}/repositories/ubuntu/"
+deb_files="cirros-testvm-mellanox_0.3.2-ubuntu3_amd64.deb
+           eswitchd_0.10-3_amd64.deb
+           mlnx-ofed-fuel_2.3-2.0.6_amd64.deb"
+get_packages "deb" "$deb_dir" "$deb_files"
+
+bootstrap_dir="${PLUGIN_DIR}/bootstrap/"
+bootstrap_files="initramfs.img
+                 linux
+                 .ofed
+                 .kernel"
+get_packages "bootstrap" "$bootstrap_dir" "$bootstrap_files"

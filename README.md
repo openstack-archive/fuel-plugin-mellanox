@@ -1,4 +1,4 @@
-mellanox_plugin
+mellanox-plugin
 ================
 
 Plugin description
