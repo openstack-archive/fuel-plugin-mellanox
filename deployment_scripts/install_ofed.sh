@@ -31,6 +31,8 @@ function is_ofed_installed () {
     installed_ofed_version=`${OFED_INFO} -s`
     logger_print info "OFED is already installed: ${installed_ofed_version}"
     return 0
+  else
+    return 1
   fi
 }
 
