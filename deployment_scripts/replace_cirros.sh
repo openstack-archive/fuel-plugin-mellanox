@@ -15,7 +15,11 @@
 # limitations under the License.
 
 source ./common
-CIRROS_PACKAGE_NAME='cirros-testvm-mellanox'
+if [ $SRIOV == true ] && [ $DRIVER == 'eth_ipoib' ]; then
+  CIRROS_PACKAGE_NAME='cirros-testvm-mellanox-ib'
+else
+  CIRROS_PACKAGE_NAME='cirros-testvm-mellanox'
+fi
 
 function install_cirros() {
   if [ $DISTRO == 'redhat' ]; then

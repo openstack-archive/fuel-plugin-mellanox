@@ -38,7 +38,7 @@
   parameters:
     cmd: ./sriov.sh configure
     timeout: 60
-# Rename iSER interface
+# Rename iSER interface for Eth mode
 - role: '*'
   stage: pre_deployment
   type: puppet
@@ -88,6 +88,15 @@
     puppet_manifest: puppet/manifests/cinder.pp
     puppet_modules: puppet/modules:/etc/puppet/modules
     timeout: 360
+# Set storage network configurations on the IB child
+# if exists
+- role: '*'
+  stage: post_deployment
+  type: puppet
+  parameters:
+    puppet_manifest: puppet/manifests/configure_iser_child.pp
+    puppet_modules: puppet/modules:/etc/puppet/modules
+    timeout: 60
 # Override the testvm with Mellanox Cirros TestVM
 - role: ['primary-controller']
   stage: post_deployment

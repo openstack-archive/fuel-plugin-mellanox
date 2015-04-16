@@ -1,0 +1,47 @@
+#!/usr/bin/bash
+
+# Constants
+readonly SCOPE=`basename $0`
+readonly SUCCESS=0
+readonly FAILURE=1
+
+# Variables
+STORAGE_PORT='<%=@storage_parent%>'
+PKEY='<%=@iser_pkey%>'
+
+# This functions print logs to /var/log/messages
+function logger_print () {
+    priority=$1
+    msg=$2
+    logger -t $SCOPE "$priority: $msg"
+}
+
+if [ -n "$PKEY" ]; then
+
+    # Check that the storage port exists
+    if [ ! -d "/sys/class/net/$STORAGE_PORT" ]; then
+        logger_print  err  "No such a port $STORAGE_PORT, skipping create_child for iSER."
+        exit $FAILURE
+    fi
+
+    # Check the PKEY child already exists
+    if [ -d "/sys/class/net/$STORAGE_PORT.$PKEY" ]; then
+        logger_print  info  "PKEY $PKEY already exists for $STORAGE_PORT."
+        exit $SUCCESS
+    fi
+
+    if [ ! -d "/sys/class/net/$STORAGE_PORT.$PKEY" ]; then
+        echo "0x$PKEY" > /sys/class/net/$STORAGE_PORT/create_child
+    fi
+
+    # Verify child creation
+    if [ $? -ne $SUCCESS ]; then
+        logger_print  err "Failed to create $PKEY child for $STORAGE_PORT."
+        exit $FAILURE
+    fi
+
+    logger_print info "Created storage network child with PKEY $PKEY for port $STORAGE_PORT."
+
+fi
+
+exit $SUCCESS
