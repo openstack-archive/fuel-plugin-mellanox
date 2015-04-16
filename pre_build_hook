@@ -62,7 +62,7 @@ function get_packages() {
 }
 
 rpm_dir="${PLUGIN_DIR}/repositories/centos/Packages/"
-rpm_files="cirros-testvm-mellanox-0.3.2-3.el6.x86_64.rpm
+rpm_files="cirros-testvm-mellanox-0.3.2-1.mira3.x86_64.rpm
            eswitchd-0.11-3.el6.x86_64.rpm
            mlnx-ofed-fuel-2.3-2.0.6.el6.x86_64.rpm
            redhat-rpm-config-9.0.3-42.el6.centos.noarch.rpm"
