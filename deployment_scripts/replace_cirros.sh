@@ -15,13 +15,12 @@
 # limitations under the License.
 
 source ./common
-CIRROS_PACKAGE_NAME='cirros-testvm-mellanox'
 
 function install_cirros() {
   if [ $DISTRO == 'redhat' ]; then
-    yum install -y $CIRROS_PACKAGE_NAME
+    yum install -y $1
   elif [ $DISTRO == 'ubuntu' ]; then
-    apt-get install -y $CIRROS_PACKAGE_NAME
+    apt-get install -y $1
   fi
 }
 
@@ -30,8 +29,15 @@ if [ $SRIOV == false ]; then
                      only for SR-IOV deployments"
   exit 0
 fi
+
+if [ $DRIVER == 'eth_ipoib' ]; then
+  CIRROS_PACKAGE_NAME='cirros-testvm-mellanox-ib'
+else
+  CIRROS_PACKAGE_NAME='cirros-testvm-mellanox'
+fi
+
 ruby ./delete_images.rb 2>/dev/null &&
-install_cirros &&
+install_cirros $CIRROS_PACKAGE_NAME &&
 ruby /etc/puppet/modules/osnailyfacter/modular/astute/upload_cirros.rb 2>/dev/null
 if [ $? -ne 0 ]; then
   logger_print error "Replacing Cirros image with Mellanox-Cirros image failed"
