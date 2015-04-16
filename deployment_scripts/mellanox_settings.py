@@ -117,6 +117,9 @@ class MellanoxSettings(object):
                 raise MellanoxSettingsException(
                     "Failed reading vlan for br-storage"
                 )
+            if mlnx['driver'] == 'eth_ipoib':
+                pkey = format((vlan ^ 0x8000),'04x')
+                mlnx['storage_pkey'] = pkey
 
     @classmethod
     def add_storage_parent(cls):
@@ -161,7 +164,8 @@ class MellanoxSettings(object):
 
         # Handle iSER interface with and w/o vlan tagging
         storage_vlan = mlnx.get('storage_vlan')
-        if storage_vlan:
+        storage_parent = cls.get_interface_by_network('storage')
+        if storage_vlan and mlnx['driver'] == 'mlx4_en': # Use VLAN dev
             vlan_name = "{0}.{1}".format(ISER_IFC_NAME, storage_vlan)
             # Set storage rule to iSER interface vlan interface
             cls.data['network_scheme']['roles']['storage'] = vlan_name
@@ -172,31 +176,28 @@ class MellanoxSettings(object):
                 'vlan_id': int(storage_vlan),
                 'vlan_dev': ISER_IFC_NAME
             })
-            transformations.remove({
-                'action': 'add-port',
-                'bridge': 'br-storage',
-                'name': "{0}.{1}".format(
-                    cls.get_interface_by_network('storage'),
-                    storage_vlan
-                 ),
-            })
             endpoints['br-storage']['vendor_specific']['phy_interfaces'] = [ ISER_IFC_NAME ]
             endpoints[vlan_name] = (
                 endpoints.pop('br-storage', {})
             )
         else:
             # Set storage rule to iSER port
-            cls.data['network_scheme']['roles']['storage'] = ISER_IFC_NAME
-            transformations.remove({
-                'action': 'add-port',
-                'bridge': 'br-storage',
-                'name': cls.get_interface_by_network('storage'),
-            })
+            cls.data['network_scheme']['roles']['storage'] = \
+                mlnx['iser_ifc_name']
+
             # Set iSER endpoint with br-storage parameters
-            endpoints[ISER_IFC_NAME] = (
+            endpoints[mlnx['iser_ifc_name']] = (
                 endpoints.pop('br-storage', {})
             )
-            interfaces[ISER_IFC_NAME] = {}
+            interfaces[mlnx['iser_ifc_name']] = {}
+
+        if storage_vlan: \
+            storage_parent = "{0}.{1}".format(storage_parent, storage_vlan)
+        transformations.remove({
+            'action': 'add-port',
+            'bridge': 'br-storage',
+            'name': storage_parent,
+        })
 
     @classmethod
     def get_endpoints_section(cls):
@@ -299,7 +300,7 @@ class MellanoxSettings(object):
             cls.write_to_yaml(PLUGIN_OVERRIDE_FILE)
         except MellanoxSettingsException, exc:
             sys.stderr.write("Couldn't add Mellanox settings to "
-                             "{0}: {1}\n".format(settings_file, exc))
+                             "{0}: {1}\n".format(SETTINGS_FILE, exc))
             raise MellanoxSettingsException("Failed updating one or more "
                                             "setting files")
 

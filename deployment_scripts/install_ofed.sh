@@ -118,6 +118,12 @@ function update_fw_if_not_oem () {
   fi
 }
 
+function enable_eipoib (){
+  if [ $DRIVER == 'eth_ipoib' ]; then
+    sed -i s/^E_IPOIB_LOAD.*$/E_IPOIB_LOAD=yes/g /etc/infiniband/openib.conf
+  fi
+}
+
 if ! is_ofed_installed; then
   # Install mlnx-ofed-fuel rpm/deb package which extracts OFED installation dir
   install_mlnx_ofed_src
@@ -128,6 +134,9 @@ if ! is_ofed_installed; then
 
   # First install OFED without SR-IOV and FW upgrade
   install_ofed_without_fw_update
+
+  # Enable Ethernet IP Over Infiniband in case of eth_ipoib driver
+  enable_eipoib
 fi
 
 # OEM cards require a different dedicated OFED build, this build doesn't
