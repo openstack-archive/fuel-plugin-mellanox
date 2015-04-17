@@ -108,13 +108,15 @@ class MellanoxSettings(object):
     def add_storage_vlan(cls):
         mlnx = cls.get_mlnx_section()
         endpoints = cls.get_endpoints_section()
-        try:
-            vlan = int(endpoints['br-storage']['vendor_specific']['vlans'])
-        except ValueError:
-            raise MellanoxSettingsException(
-                "Failed reading vlan for br-storage"
-            )
-        mlnx['storage_vlan'] = vlan
+        vlan = endpoints['br-storage']['vendor_specific'].get('vlans')
+        # set storage vlan in mlnx section if vlan is used with iser
+        if vlan:
+            try:
+                mlnx['storage_vlan'] = int(vlan)
+            except ValueError:
+                raise MellanoxSettingsException(
+                    "Failed reading vlan for br-storage"
+                )
 
     @classmethod
     def add_storage_parent(cls):
@@ -142,40 +144,54 @@ class MellanoxSettings(object):
         transformations = cls.data['network_scheme']['transformations']
         mlnx = cls.get_mlnx_section()
 
+        transformations.remove({
+            'action': 'add-br',
+            'name': 'br-storage'
+        })
+        br_prv_br_storage_patch = {
+            'action': 'add-patch',
+            'provider': 'ovs',
+            'bridges': [
+                'br-prv',
+                'br-storage',
+            ],
+        }
+        if br_prv_br_storage_patch in transformations:
+            transformations.remove(br_prv_br_storage_patch)
+
         # Handle iSER interface with and w/o vlan tagging
-        storage_vlan = mlnx['storage_vlan']
+        storage_vlan = mlnx.get('storage_vlan')
         if storage_vlan:
             vlan_name = "{0}.{1}".format(ISER_IFC_NAME, storage_vlan)
             # Set storage rule to iSER interface vlan interface
             cls.data['network_scheme']['roles']['storage'] = vlan_name
             # Set iSER interface vlan interface
-            transf_add = {
+            transformations.append({
                 'action': 'add-port',
                 'name': vlan_name,
                 'vlan_id': int(storage_vlan),
                 'vlan_dev': ISER_IFC_NAME
-            }
-            if transf_add not in transformations:
-                transformations.append(transf_add)
-            transformations_to_delete = [
-                { 'action': 'add-port',
-                  'name': "{0}.{1}".format(
-                      cls.get_interface_by_network('storage'),
-                      storage_vlan
-                   ),
-                  'bridge': 'br-storage' } ,
-                { 'action': 'add-br',
-                  'name': 'br-storage' }
-            ]
+            })
+            transformations.remove({
+                'action': 'add-port',
+                'bridge': 'br-storage',
+                'name': "{0}.{1}".format(
+                    cls.get_interface_by_network('storage'),
+                    storage_vlan
+                 ),
+            })
             endpoints['br-storage']['vendor_specific']['phy_interfaces'] = [ ISER_IFC_NAME ]
             endpoints[vlan_name] = (
                 endpoints.pop('br-storage', {})
             )
-            for transf_del in transformations_to_delete:
-                transformations.remove(transf_del)
         else:
             # Set storage rule to iSER port
             cls.data['network_scheme']['roles']['storage'] = ISER_IFC_NAME
+            transformations.remove({
+                'action': 'add-port',
+                'bridge': 'br-storage',
+                'name': cls.get_interface_by_network('storage'),
+            })
             # Set iSER endpoint with br-storage parameters
             endpoints[ISER_IFC_NAME] = (
                 endpoints.pop('br-storage', {})

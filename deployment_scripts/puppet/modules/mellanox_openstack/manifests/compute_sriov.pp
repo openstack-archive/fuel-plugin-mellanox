@@ -1,4 +1,4 @@
-class mellanox_openstack::compute (
+class mellanox_openstack::compute_sriov (
   $physnet,
   $physifc,
 ) {
