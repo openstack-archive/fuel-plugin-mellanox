@@ -89,7 +89,7 @@
     puppet_modules: puppet/modules:/etc/puppet/modules
     timeout: 360
 # Override the testvm with Mellanox Cirros TestVM
-- role: ['controller', 'primary-controller']
+- role: ['primary-controller']
   stage: post_deployment
   type: shell
   parameters:
