@@ -1,4 +1,4 @@
-class mellanox_openstack::controller (
+class mellanox_openstack::controller_sriov (
   $eswitch_vnic_type,
   $eswitch_apply_profile_patch,
   $mechanism_drivers,

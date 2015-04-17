@@ -19,6 +19,8 @@ source $SCRIPT_DIR/common
 readonly SCRIPT_MODE=$1
 readonly FALLBACK_NUM_VFS=16
 readonly NEW_KERNEL_PARAM="intel_iommu=on"
+readonly GRUB_FILE_CENTOS="/boot/grub/grub.conf"
+readonly GRUB_FILE_UBUNTU="/boot/grub/grub.cfg"
 
 function get_port_type() {
   if [ $DRIVER == 'mlx4_en' ]; then
@@ -47,9 +49,18 @@ function calculate_total_vfs () {
                         should be an integer between ${MIN_VFS},${MAX_VFS}"
     return 1
   fi
-  num_of_vfs=${USER_NUM_OF_VFS}
-  if [ $((${USER_NUM_OF_VFS} % 2)) -eq 1 ]; then
-    let num_of_vfs="${USER_NUM_OF_VFS} + 1" # number of vfs is odd and <= 64, then +1 is legal
+  num_of_vfs=0
+  # SR-IOV is enabled, the given number of VFs is used
+  # iSER is also enabled, the iSER VF is among the given SR-IOV VFs
+  if [ $SRIOV == true ]; then
+    num_of_vfs=${USER_NUM_OF_VFS}
+  # SR-IOV is disabled with iSER enabled, then use only the storage VF
+  elif [ $ISER == true ]; then
+    num_of_vfs=`get_num_probe_vfs`
+  fi
+  # Enforce even num of vfs
+  if [ $((${num_of_vfs} % 2)) -eq 1 ]; then
+    let num_of_vfs="${num_of_vfs} + 1" # number of vfs is odd and <= 64, then +1 is legal
   fi
   echo ${num_of_vfs}
 }
@@ -73,12 +84,11 @@ function set_modprobe_file () {
 }
 
 function set_kernel_params () {
-  grub_file=`get_grub_file`
   if [ "$DISTRO" == "redhat" ]; then
-    grub_file='/boot/grub/grub.conf'
+    grub_file=${GRUB_FILE_CENTOS}
     kernel_line=`egrep 'kernel\s+/vmlinuz' ${grub_file} | grep -v '#'`
   elif [ "$DISTRO" == "ubuntu" ]; then
-    grub_file='/boot/grub/grub.cfg'
+    grub_file=${GRUB_FILE_UBUNTU}
     kernel_line=$(echo "$(egrep 'linux\s+/vmlinuz' ${grub_file} | grep -v '#')" | head -1)
   fi
 
@@ -150,6 +160,10 @@ function configure_sriov () {
 }
 
 function validate_sriov () {
+  if ! is_sriov_required; then
+    logger_print info "Skipping SR-IOV validation, no virtual functions required"
+    return 0
+  fi
   logger_print info "Validating SR-IOV is enabled, and the required
                      amount of virtual functions exist"
   # get number of VFs
@@ -159,7 +173,6 @@ function validate_sriov () {
     exit 1
   fi
   # check if kernel was loaded with the new parameter
-  grub_file=`get_grub_file`
   grep ${NEW_KERNEL_PARAM} /proc/cmdline
   has_kernel_param_status=$?
   if [ $has_kernel_param_status -eq 0 ]; then
