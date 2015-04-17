@@ -25,7 +25,12 @@ function install_cirros() {
   fi
 }
 
-ruby ./delete_images.rb &&
+if [ $SRIOV == false ]; then
+  logger_print info "Skipping cirros image replacement, Mellanox-Cirros is required
+                     only for SR-IOV deployments"
+  exit 0
+fi
+ruby ./delete_images.rb 2>/dev/null &&
 install_cirros &&
 ruby /etc/puppet/modules/osnailyfacter/modular/astute/upload_cirros.rb 2>/dev/null
 if [ $? -ne 0 ]; then
