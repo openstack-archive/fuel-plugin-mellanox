@@ -18,6 +18,7 @@ readonly SCRIPT_DIR=$(dirname "$0")
 source $SCRIPT_DIR/common
 readonly SCRIPT_MODE=$1
 readonly FALLBACK_NUM_VFS=16
+readonly SRIOV_ENABLED_FLAG=1
 readonly NEW_KERNEL_PARAM="intel_iommu=on"
 readonly GRUB_FILE_CENTOS="/boot/grub/grub.conf"
 readonly GRUB_FILE_UBUNTU="/boot/grub/grub.cfg"
@@ -113,9 +114,9 @@ function burn_vfs_in_fw () {
   devices=$(mst status | grep pciconf | awk '{print $1}')
   for dev in $devices; do
     logger_print debug "device=$dev"
-    flint -d $dev dc | grep -i sriov | grep -i -q true &> /dev/null
+    mlxconfig -d $dev q | grep SRIOV | awk '{print $2}' | grep $SRIOV_ENABLED_FLAG  &>/dev/null
     sriov_enabled=$?
-    current_num_of_vfs=`flint -d $dev dc | grep -i total_vfs | awk '{print $3}'`
+    current_num_of_vfs=`mlxconfig -d $dev q | grep NUM_OF_VFS | awk '{print $2}'`
     if [ $sriov_enabled -eq 0 ] 2>/dev/null; then
       logger_print debug "Detected SR-IOV is already enabled"
     else
