@@ -64,8 +64,8 @@ function get_packages() {
 old_rpms="${PLUGIN_DIR}/repositories/centos/Packages/*.rpm"
 rpm_files="cirros-testvm-mellanox-0.3.2-1.mira3.x86_64.rpm
            cirros-testvm-mellanox-ib-0.3.2-4.el6.x86_64.rpm
-           eswitchd-0.11-4.el6.x86_64.rpm
-           mlnx-dnsmasq-2014.2.1-1.noarch.rpm
+           eswitchd-0.11-5.el6.x86_64.rpm
+           mlnx-dnsmasq-2014.2.2-1.noarch.rpm
            mlnx-ofed-fuel-2.3-2.0.6.el6.x86_64.rpm
            redhat-rpm-config-9.0.3-42.el6.centos.noarch.rpm"
 get_packages "rpm" "$old_rpms" "$rpm_files"
@@ -73,8 +73,8 @@ get_packages "rpm" "$old_rpms" "$rpm_files"
 old_debs="${PLUGIN_DIR}/repositories/ubuntu/*.deb"
 deb_files="cirros-testvm-mellanox_0.3.2-ubuntu3_amd64.deb
            cirros-testvm-mellanox-ib_0.3.2-4_amd64.deb
-           eswitchd_0.11-4_amd64.deb
-           mlnx-dnsmasq_2014.2.1-1_all.deb
+           eswitchd_0.11-5_amd64.deb
+           mlnx-dnsmasq_2014.2.2-1_all.deb
            mlnx-ofed-fuel_2.3-2.0.6_amd64.deb"
 get_packages "deb" "$old_debs" "$deb_files"
 
