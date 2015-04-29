@@ -30,7 +30,7 @@ class mellanox_openstack::controller_sriov (
     }
 
     neutron_dhcp_agent_config { 'DEFAULT/dhcp_driver' :
-      value     => 'dhcp_driver = mlnx_dhcp.MlnxDnsmasq',
+      value     => 'mlnx_dhcp.MlnxDnsmasq',
       subscribe =>  Package['mlnx-dnsmasq']
     }
 

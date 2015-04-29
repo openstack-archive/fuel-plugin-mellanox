@@ -121,6 +121,7 @@ function update_fw_if_not_oem () {
 function enable_eipoib (){
   if [ $DRIVER == 'eth_ipoib' ]; then
     sed -i s/^E_IPOIB_LOAD.*$/E_IPOIB_LOAD=yes/g /etc/infiniband/openib.conf
+    \cp -f ./ipoibd /sbin/ipoibd
   fi
 }
 
