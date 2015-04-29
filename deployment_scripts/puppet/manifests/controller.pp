@@ -12,3 +12,10 @@ if ($mlnx['sriov']) {
     mlnx_sriov                  => $mlnx['sriov']
   }
 }
+# Configure broadcast dnsmasq for IB PV
+elsif ($mlnx['driver'] == 'eth_ipoib') {
+  class { 'mellanox_openstack::controller_ib_pv' :
+    mlnx_driver                 => $mlnx['driver'],
+    mlnx_sriov                  => $mlnx['sriov']
+  }
+}
