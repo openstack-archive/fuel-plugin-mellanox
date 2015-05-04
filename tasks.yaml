@@ -97,13 +97,14 @@
     puppet_manifest: puppet/manifests/configure_iser_child.pp
     puppet_modules: puppet/modules:/etc/puppet/modules
     timeout: 120
-# Move Ubuntu iSER conigurations to /etc/network/interfaces
-# For MLNX_OFED drivers
+# Move iSER conigurations to /etc/network/interfaces in Ubuntu
+# for MLNX_OFED drivers and verify dhcp single service after
+# moving to mlnx-dnsmasq
 - role: '*'
   stage: post_deployment
   type: shell
   parameters:
-    cmd: ./move_ubuntu_ib_interfaces_conf.sh
+    cmd: ./ib_post_conf.sh
     timeout: 60
 # Override the testvm with Mellanox Cirros TestVM
 - role: ['primary-controller']
