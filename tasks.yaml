@@ -38,14 +38,6 @@
   parameters:
     cmd: ./sriov.sh configure
     timeout: 60
-# Rename iSER interface for Eth mode
-- role: '*'
-  stage: pre_deployment
-  type: puppet
-  parameters:
-    puppet_manifest: puppet/manifests/iser_rename.pp
-    puppet_modules: puppet/modules:/etc/puppet/modules
-    timeout: 60
 # Reboot due to OFED installation / IOMMU configuration
 - role: '*'
   stage: pre_deployment
@@ -58,6 +50,14 @@
   type: shell
   parameters:
     cmd: ./sriov.sh validate
+    timeout: 60
+# Rename iSER interface for Eth mode
+- role: '*'
+  stage: pre_deployment
+  type: puppet
+  parameters:
+    puppet_manifest: puppet/manifests/iser_rename.pp
+    puppet_modules: puppet/modules:/etc/puppet/modules
     timeout: 60
 # Log a notice about post_deployment start
 - role: '*'

@@ -26,5 +26,17 @@ if [ $DISTRO == 'ubuntu' ] && [ $DRIVER == 'eth_ipoib' ]; then
     cat /etc/network/interfaces.d/ifcfg-ib* >> /etc/network/interfaces
     \rm -f /etc/network/interfaces.d/ifcfg-ib0*
   fi
+
+  # Kill tgt daemons if exists
+  tgt_locks=`find /var/run/ -name tgtd* | wc -l`
+  if [ $tgt_locks -ne 0 ];then
+    \rm -f /var/run/tgtd* && killall -9 tgtd
+    service tgt stop
+  fi
+
   service openibd restart && service openvswitch-switch restart
+
+  if [ $tgt_locks -ne 0 ];then
+    service tgt start
+  fi
 fi

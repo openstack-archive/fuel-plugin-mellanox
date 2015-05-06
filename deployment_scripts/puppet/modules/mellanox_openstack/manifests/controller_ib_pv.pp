@@ -24,6 +24,7 @@ class mellanox_openstack::controller_ib_pv (
     service { $dhcp_agent :
       ensure    =>  running,
       enable    =>  true,
+      provider  =>  pacemaker,
       subscribe =>  [File[$mlnx_dnsmasq_pv_config_file],
                      Neutron_dhcp_agent_config['DEFAULT/dnsmasq_config_file']]
     }
