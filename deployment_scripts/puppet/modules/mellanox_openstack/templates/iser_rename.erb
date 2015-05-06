@@ -21,6 +21,7 @@ readonly UDEV_FILE='/etc/udev/rules.d/70-persistent-net.rules'
 # Variables
 STORAGE_PORT='<%=@storage_parent%>'
 ISER_NAME='<%=@iser_interface_name%>'
+
 PARENT_FIRST_VF="/sys/class/net/$STORAGE_PORT/device/virtfn0"
 
 # This functions print logs to /var/log/messages
@@ -37,7 +38,12 @@ if [ ! -d $PARENT_FIRST_VF ]; then
 fi
 
 DEVICES='/sys/class/net/*/device'
-SON_BUS=`basename $(readlink /sys/class/net/$STORAGE_PORT/device/virtfn0)`
+if [ -e /sys/class/net/$STORAGE_PORT/device/virtfn0 ];then
+  SON_BUS=`basename $(readlink /sys/class/net/$STORAGE_PORT/device/virtfn0)`
+else
+  PARENT_BUS=`cat /sys/class/net/$STORAGE_PORT/device/uevent | grep -i pci_slot | cut -d = -f 2`
+  SON_BUS=${PARENT_BUS::(-1)}1
+fi
 STORAGE_PORT_NUMBER=`cat /sys/class/net/$STORAGE_PORT/dev_id`
 
 # Find the probe VF port that fits the storage ports number and BUS
@@ -71,7 +77,7 @@ fi
 
 # Persistantly rename the matched probed port
 if [ $PROBED_PORT_NAME != $ISER_NAME ]; then
-  #Prepare line for udev
+  # Prepare line for udev
   UDEV_LINE="SUBSYSTEM==\"net\", ACTION==\"add\", "
   UDEV_LINE+="ATTR{dev_id}==\"$STORAGE_PORT_NUMBER\", KERNELS==\"$SON_BUS\", "
   UDEV_LINE+="ATTR{type}==\"1\", KERNEL==\"eth*\", NAME=\"$ISER_NAME\""
@@ -82,7 +88,13 @@ if [ $PROBED_PORT_NAME != $ISER_NAME ]; then
     OLD_LINE_NUMBER=`grep -n $PROBED_PORT_NAME $UDEV_FILE | cut -d : -f 1`
     eval "sed '"$OLD_LINE_NUMBER"d' -i $UDEV_FILE"
   fi
-  echo $UDEV_LINE >> $UDEV_FILE
+
+  # Insert new name config if not exists
+  grep $ISER_NAME $UDEV_FILE > /dev/null 2>&1
+  if [ $? -ne 0  ]; then
+    echo >> $UDEV_FILE
+    echo $UDEV_LINE >> $UDEV_FILE
+  fi
 
   # restart OFED modules for udev changes to take effect
   modprobe -r mlx4_en && modprobe mlx4_en

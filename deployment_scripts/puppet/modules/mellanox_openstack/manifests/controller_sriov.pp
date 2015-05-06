@@ -37,6 +37,7 @@ class mellanox_openstack::controller_sriov (
     service { $dhcp_agent :
       ensure     =>  running,
       enable     =>  true,
+      provider   =>  pacemaker,
       subscribe  =>  Neutron_dhcp_agent_config['DEFAULT/dhcp_driver'],
     }
   }
