@@ -17,7 +17,7 @@
 readonly SCRIPT_DIR=$(dirname "$0")
 source $SCRIPT_DIR/common
 readonly SCRIPT_MODE=$1
-readonly FALLBACK_NUM_VFS=16
+readonly FALLBACK_NUM_VFS=8
 readonly SRIOV_ENABLED_FLAG=1
 readonly NEW_KERNEL_PARAM="intel_iommu=on"
 readonly GRUB_FILE_CENTOS="/boot/grub/grub.conf"
@@ -122,7 +122,7 @@ function burn_vfs_in_fw () {
     else
       logger_print debug "Detected SR-IOV is disabled"
     fi
-    if [ "$total_vfs" -ne "$current_num_of_vfs" ] 2>/dev/null; then
+    if [[ ! "$total_vfs" == "$current_num_of_vfs" ]] 2>/dev/null; then
       logger_print debug "Current allowed number of VFs is ${current_num_of_vfs}, required number is ${total_vfs}"
       mlxconfig -y -d $dev s SRIOV_EN=1 NUM_OF_VFS=$total_vfs 2>&1 >/dev/null
       if [ $? -ne 0 ]; then

@@ -30,21 +30,23 @@ function logger_print () {
    logger -t $SCOPE "$priority: $msg"
 }
 
-# Check that a first probe VF exists
-if [ ! -d $PARENT_FIRST_VF ]; then
-    logger_print error "Did not find probed ports of ${STORAGE_PORT}, skipping rename."
-    exit 1
-fi
-
 DEVICES='/sys/class/net/*/device'
-SON_BUS=`basename $(readlink /sys/class/net/$STORAGE_PORT/device/virtfn0)`
+if [ -e $PARENT_FIRST_VF ];then
+  CHILD_BUS=`basename $(readlink /sys/class/net/$STORAGE_PORT/device/virtfn0)`
+  logger_print info "Found first probed port of ${STORAGE_PORT} with bus ID: ${CHILD_BUS}."
+else
+  PARENT_BUS=`cat /sys/class/net/$STORAGE_PORT/device/uevent | grep -i pci_slot | cut -d = -f 2`
+  CHILD_BUS=`echo $PARENT_BUS | sed -e s/0$/1/g`
+  PROBED_PORT_NAME="eth_iser_guess"
+  logger_print info "Did not find probed ports of ${STORAGE_PORT}, guessing its bus is: ${CHILD_BUS}."
+fi
 STORAGE_PORT_NUMBER=`cat /sys/class/net/$STORAGE_PORT/dev_id`
 
 # Find the probe VF port that fits the storage ports number and BUS
 for dev in $DEVICES; do
   # Check for correct bus
   CANDIDATE_BUS=`readlink -nq $dev`;
-  if [[  $CANDIDATE_BUS != *$SON_BUS* ]]; then
+  if [[  $CANDIDATE_BUS != *$CHILD_BUS* ]]; then
     continue;
   fi
 
@@ -71,9 +73,9 @@ fi
 
 # Persistantly rename the matched probed port
 if [ $PROBED_PORT_NAME != $ISER_NAME ]; then
-  #Prepare line for udev
+  # Prepare line for udev
   UDEV_LINE="SUBSYSTEM==\"net\", ACTION==\"add\", "
-  UDEV_LINE+="ATTR{dev_id}==\"$STORAGE_PORT_NUMBER\", KERNELS==\"$SON_BUS\", "
+  UDEV_LINE+="ATTR{dev_id}==\"$STORAGE_PORT_NUMBER\", KERNELS==\"$CHILD_BUS\", "
   UDEV_LINE+="ATTR{type}==\"1\", KERNEL==\"eth*\", NAME=\"$ISER_NAME\""
 
   # Change/add line in udev file
@@ -82,7 +84,13 @@ if [ $PROBED_PORT_NAME != $ISER_NAME ]; then
     OLD_LINE_NUMBER=`grep -n $PROBED_PORT_NAME $UDEV_FILE | cut -d : -f 1`
     eval "sed '"$OLD_LINE_NUMBER"d' -i $UDEV_FILE"
   fi
-  echo $UDEV_LINE >> $UDEV_FILE
+
+  # Insert new name config if not exists
+  grep $ISER_NAME $UDEV_FILE > /dev/null 2>&1
+  if [ $? -ne 0  ]; then
+    echo >> $UDEV_FILE
+    echo $UDEV_LINE >> $UDEV_FILE
+  fi
 
   # restart OFED modules for udev changes to take effect
   modprobe -r mlx4_en && modprobe mlx4_en
