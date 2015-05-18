@@ -151,16 +151,9 @@ class MellanoxSettings(object):
             'action': 'add-br',
             'name': 'br-storage'
         })
-        br_prv_br_storage_patch = {
-            'action': 'add-patch',
-            'provider': 'ovs',
-            'bridges': [
-                'br-prv',
-                'br-storage',
-            ],
-        }
-        if br_prv_br_storage_patch in transformations:
-            transformations.remove(br_prv_br_storage_patch)
+        for transforamtion in transformations:
+            if ('bridges' in transforamtion) and ('br-storage' in transforamtion['bridges']):
+                transformations.remove(transforamtion)
 
         # Handle iSER interface with and w/o vlan tagging
         storage_vlan = mlnx.get('storage_vlan')

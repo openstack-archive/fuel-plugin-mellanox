@@ -43,7 +43,7 @@ pip freeze | grep -q fuel-plugin-builder &&
 rm -rf *.rpm
 
 # Install prerequisites
-yum install rpm rpm-build dpkg-devel createrepo tar git python-pip -y ||
+yum install rpm rpm-build dpkg-devel dpkg-dev createrepo tar git python-pip -y ||
 fail_on_error "Failed installing some required packages"
 
 # Download Fuel plugin builder
