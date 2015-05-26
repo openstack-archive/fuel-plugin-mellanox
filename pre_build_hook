@@ -15,10 +15,16 @@
 # limitations under the License.
 
 readonly PLUGIN_DIR="$(dirname $0)"
-readonly DEFAULT_REPOSITORY_HOST="10.212.14.8" #TODO: Change to MLNX public repo
+readonly PLUGIN_VERSION=`cat $PLUGIN_DIR/.version`
+readonly LOCAL_REPOSITORY_PATH='10.212.14.8/mellanox_plugin/'
+readonly PUBLIC_REPOSITORY_PATH='www.mellanox.com/repository/solutions/openstack/mellanox_fuel_plugin/'
 
-if [ -z "$REPOSITORY_HOST" ]; then
-  REPOSITORY_HOST=$DEFAULT_REPOSITORY_HOST
+if [ -z "$REPOSITORY_PATH" ]; then
+  if wget -q --spider $LOCAL_REPOSITORY_PATH; then
+    REPOSITORY_PATH=$LOCAL_REPOSITORY_PATH
+  else
+    REPOSITORY_PATH=$PUBLIC_REPOSITORY_PATH
+  fi
 fi
 
 function download {
@@ -26,22 +32,22 @@ function download {
   FILE_NAME=$2
   case ${FILE_TYPE} in
     'bootstrap')
-      PREFIX_URL=mellanox_plugin/bootstrap
+      PREFIX_URL=$PLUGIN_VERSION/bootstrap
       BUILD_DIR=bootstrap
       ;;
     'rpm')
-      PREFIX_URL=mellanox_plugin/repositories/centos/Packages
+      PREFIX_URL=$PLUGIN_VERSION/repositories/centos/Packages
       BUILD_DIR=repositories/centos/Packages
       ;;
     'deb')
-      PREFIX_URL=mellanox_plugin/repositories/ubuntu
+      PREFIX_URL=$PLUGIN_VERSION/repositories/ubuntu
       BUILD_DIR=repositories/ubuntu
       ;;
     *)
       echo "Can't download ${FILE_NAME}. File of type ${FILE_TYPE} is not supported."
       exit 1
   esac
-  URL="http://${REPOSITORY_HOST}/${PREFIX_URL}/${FILE_NAME}"
+  URL="http://${REPOSITORY_PATH}/${PREFIX_URL}/${FILE_NAME}"
   DEST_DIR="${PLUGIN_DIR}/${BUILD_DIR}"
   wget ${URL} -P ${DEST_DIR}
   if [ $? -ne 0 ]; then
@@ -81,6 +87,6 @@ get_packages "deb" "$old_debs" "$deb_files"
 bootstrap_dir="${PLUGIN_DIR}/bootstrap/"
 bootstrap_files="initramfs.img
                  linux
-                 .ofed
-                 .kernel"
+                 ofed
+                 kernel"
 get_packages "bootstrap" "$bootstrap_dir" "$bootstrap_files"
