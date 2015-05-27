@@ -30,7 +30,7 @@ from optparse import OptionParser
 import libxml2
 import signal
 
-VERSION = "2.3-2.0.6"
+VERSION = "2.3-2.0.8"
 
 # Global parameters
 logger = None
@@ -735,20 +735,20 @@ class VirtualNicObserver(NicObserver):
 				if self.first_ovs_br is None:
 					self.first_ovs_br = br
 					ovs_br.first_ovs_br = self.first_ovs_br
-					self.logger.debug("!!! Found OVS br %s for port %s." % (br, n))
+					self.logger.debug("Found OVS br %s for port %s." % (br, n))
                                 ovs_br.scaned_port = self.scaned_port
 				macs_ovsbr = list(set(ovs_br.get_nic_vif_macs(n, None)))
                                 if macs_ovsbr:
-					self.logger.debug("!!! Found macs in OVS over LB port %s: %s" % (n, macs_ovsbr))
+					self.logger.debug("Found macs in OVS over LB port %s: %s" % (n, macs_ovsbr))
 					macs = macs + macs_ovsbr
 
 					# Create a mapping with converted VLANs
-					self.logger.debug("!!!! original_mapped_mac_2_vlan is %s" % self.map_mac_2_vlan)
-					self.logger.debug("!!!! ovs_mapped_mac_2_vlan is %s" % ovs_br.map_mac_2_vlan)
+					self.logger.debug("original_mapped_mac_2_vlan is %s" % self.map_mac_2_vlan)
+					self.logger.debug("ovs_mapped_mac_2_vlan is %s" % ovs_br.map_mac_2_vlan)
 					self.map_mac_2_vlan.update(ovs_br.map_mac_2_vlan)
-					self.logger.debug("!!!! updated_mapped_mac_2_vlan is %s" % self.map_mac_2_vlan)
+					self.logger.debug("updated_mapped_mac_2_vlan is %s" % self.map_mac_2_vlan)
                                         vlan_rules = ovs_br.get_vlan_vifs([self.first_ovs_br])
-                                        self.logger.debug("!!!! vlan rules %s for bridge %s" % (vlan_rules, self.first_ovs_br))
+                                        self.logger.debug("vlan rules %s for bridge %s" % (vlan_rules, self.first_ovs_br))
                                         for vlan, macs_for_vlan in vlan_rules.items():
 						for m in macs_for_vlan:
 							self.map_mac_2_vlan[m] = vlan
@@ -758,12 +758,12 @@ class VirtualNicObserver(NicObserver):
 					for vlan_id, vlan_macs in vlan_rules.items():
 						if vlan_id not in self.known_vlan_macs:
 							self.known_vlan_macs[vlan_id] = []
-						self.logger.debug("!!!! Starting vlan add loop with vlan %s." % (vlan_id))
-						self.logger.debug("!!!! vlan_macs %s self.known_vlan_macs[%s] %s." % (vlan_macs, vlan_id, self.known_vlan_macs[vlan_id]))
+						self.logger.debug("Starting vlan add loop with vlan %s." % (vlan_id))
+						self.logger.debug("vlan_macs %s self.known_vlan_macs[%s] %s." % (vlan_macs, vlan_id, self.known_vlan_macs[vlan_id]))
 						new_vlan_macs = list(set(vlan_macs) - set(self.known_vlan_macs[vlan_id]))
 						if new_vlan_macs:
 							vlan_if = self.parent.name + "." + vlan_id
-							self.logger.debug("!!!! Found new vlan macs %s for vlan %s." % (new_vlan_macs, vlan_id))
+							self.logger.debug("Found new vlan macs %s for vlan %s." % (new_vlan_macs, vlan_id))
 							vlan_ob.add_loop(vlan_if, [], new_vlan_macs, [vlan_if])
 							self.known_vlan_macs[vlan_id] = self.known_vlan_macs[vlan_id] + new_vlan_macs
 
@@ -776,11 +776,12 @@ class VirtualNicObserver(NicObserver):
                                                 vlan_if = self.parent.name + "." + vlan_id
                                                 for mac_to_remove in vlan_macs_to_remove:
                                                         current_slave = self.get_slave_by_mac(mac_to_remove, self.parent.name, vlan_id = vlan_id)
-                                                        self.logger.debug("!!!! Need to remove slave: %s of vlan id %s" % (current_slave, vlan_id))
-                                                        #vlan_ob.remove_loop(vlan_if, [], vlan_macs_to_remove, [vlan_if])
+                                                        if not current_slave:
+                                                                continue
+                                                        self.logger.debug("Need to remove slave: %s of vlan id %s" % (current_slave, vlan_id))
                                                         self.destroy_nic(mac_to_remove, self.parent.name, current_slave)
                                                         self.known_vlan_macs[vlan_id] = list(set(self.known_vlan_macs[vlan_id]) - set([mac_to_remove]))
-					self.logger.debug("!!!! Connected interface %s to ovs-br %s macs2vlan: %s." % (n, br, str(self.map_mac_2_vlan)))
+					self.logger.debug("Connected interface %s to ovs-br %s macs2vlan: %s." % (n, br, str(self.map_mac_2_vlan)))
 
 			self.add_to_scaned_list(n)
 
@@ -1309,7 +1310,7 @@ class KVMOvsNicObserver(VirtualNicObserver, KVMDomain):
 		out = {} # vlan -> [list of macs]
 		for key in self.map_mac_2_vlan:
 			vlan = self.map_mac_2_vlan[key]
-			self.logger.debug("!!!! in get_vlan_vifs checking vlan %s" % vlan)
+			self.logger.debug("in get_vlan_vifs checking vlan %s" % vlan)
 			if vlan != None:
 				# change vlan according to ovs flow-controll:
 				for br in all_bridges:
