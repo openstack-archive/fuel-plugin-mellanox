@@ -84,6 +84,12 @@ class MellanoxSettings(object):
                 "Found mismatching Mellanox drivers on different interfaces: "
                 "{0}".format(mlnx_drivers)
             )
+        if len(set(mlnx_drivers.values())) == 0:
+            raise MellanoxSettingsException(
+                "\nNo Network role was assigned to Mellanox interfaces. "
+                "\nPlease go to nodes tab in Fuel UI and reset your network "
+                "roles in interfaces screen. aborting. "
+            )
 
         # add the driver to the yaml
         mlnx['driver'] = mlnx_drivers.values().pop()
