@@ -18,6 +18,7 @@ import os
 import sys
 import yaml
 import glob
+import logging
 import traceback
 
 MLNX_SECTION = 'mellanox-plugin'
@@ -25,7 +26,7 @@ SETTINGS_FILE = '/etc/astute.yaml'
 PLUGIN_OVERRIDE_FILE = '/etc/hiera/override/plugins.yaml'
 MLNX_DRIVERS_LIST = ('mlx4_en', 'eth_ipoib')
 ISER_IFC_NAME = 'eth_iser0'
-
+LOG_FILE = '/var/log/mellanox-plugin.log'
 
 class MellanoxSettingsException(Exception):
     pass
@@ -298,26 +299,34 @@ class MellanoxSettings(object):
             cls.update_role_settings()
             cls.write_to_yaml(PLUGIN_OVERRIDE_FILE)
         except MellanoxSettingsException, exc:
-            sys.stderr.write("Couldn't add Mellanox settings to "
-                             "{0}: {1}\n".format(SETTINGS_FILE, exc))
+            error_msg = "Couldn't add Mellanox settings to " \
+                            "{0}: {1}\n".format(SETTINGS_FILE, exc)
+            sys.stderr.write(error_msg)
+            logging.error(error_msg)
             raise MellanoxSettingsException("Failed updating one or more "
                                             "setting files")
 
 def main():
+    logging.basicConfig(format='%(asctime)s %(message)s',
+                        level=logging.DEBUG, filename=LOG_FILE)
+
     try:
         settings = MellanoxSettings()
         settings.update_settings()
     except MellanoxSettingsException, exc:
-        sys.stderr.write("Failed adding Mellanox settings: {0}\n".format(exc))
+        error_msg = "Failed adding Mellanox settings: {0}\n".format(exc)
+        sys.stderr.write(error_msg)
+        logging.error(exc)
         sys.exit(1)
     except Exception, exc:
-        sys.stderr.write("An unknown error has occured while adding "
-                         "Mellanox settings: {0}\n".format(
-                             traceback.format_exc()
-                         )
-        )
+        error_msg = "An unknown error has occured while adding " \
+                         "Mellanox settings: {0}\n".format(exc)
+        sys.stderr.write(error_msg)
+        logging.exception(exc)
         sys.exit(1)
-    sys.stdout.write("Done adding Mellanox settings\n")
+    success_msg = "Done adding Mellanox settings\n"
+    sys.stdout.write(success_msg)
+    logging.info(success_msg)
     sys.exit(0)
 
 if __name__ == '__main__':
