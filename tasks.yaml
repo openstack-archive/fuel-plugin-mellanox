@@ -15,6 +15,13 @@
   parameters:
     cmd: ./link_astute_file.sh
     timeout: 5
+# This is a workaround: disable wrong rules in CentOS IBP #1458832.
+- role: '*'
+  stage: pre_deployment
+  type: shell
+  parameters:
+    cmd: ./blocking_iptables_rules.sh
+    timeout: 20
 # Add relevant settings for Mellanox manifests to mellanox plugin section in
 # hiera, to make the data easily accessible and independent of astute.yaml
 - role: '*'
