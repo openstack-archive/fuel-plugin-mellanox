@@ -23,13 +23,21 @@
     cmd: ./blocking_iptables_rules.sh
     timeout: 20
 # Add relevant settings for Mellanox manifests to mellanox plugin section in
-# hiera, to make the data easily accessible and independent of astute.yaml
+# Hiera, to make the data easily accessible and independent of astute.yaml
 - role: '*'
   stage: pre_deployment
   type: shell
   parameters:
     cmd: ./mellanox_settings.py
     timeout: 10
+# Verify kernel-devel packages are installed (if CentOS)
+- role: '*'
+  stage: pre_deployment
+  type: puppet
+  parameters:
+    puppet_manifest: puppet/manifests/verify_kernel_devel.pp
+    puppet_modules: puppet/modules:/etc/puppet/modules
+    timeout: 200
 # Install OFED + FW upgrade
 - role: '*'
   stage: pre_deployment
