@@ -37,6 +37,7 @@ else
 fi
 
 ruby ./delete_images.rb 2>/dev/null &&
+puppet apply -e 'package { "cirros-testvm": ensure => absent }' &&
 install_cirros $CIRROS_PACKAGE_NAME &&
 ruby /etc/puppet/modules/osnailyfacter/modular/astute/upload_cirros.rb 2>/dev/null
 if [ $? -ne 0 ]; then
