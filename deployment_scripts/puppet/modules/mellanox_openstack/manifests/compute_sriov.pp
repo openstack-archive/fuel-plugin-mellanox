@@ -17,6 +17,8 @@ class mellanox_openstack::compute_sriov (
       physifc => $physifc,
   }
 
+  class { 'mellanox_openstack::snapshot_patch' : }
+
   package { $libvirt_package_name :
       ensure => installed
   }
