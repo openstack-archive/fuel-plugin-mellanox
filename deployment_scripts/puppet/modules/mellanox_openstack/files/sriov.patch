@@ -1,0 +1,32 @@
+--- /usr/lib/python2.7/dist-packages/nova/virt/libvirt/driver.py	2015-05-15 15:07:11.000000000 +0000
++++ /usr/lib/python2.7/dist-packages/nova/virt/libvirt/driver_new.py	2015-05-28 18:37:12.073191065 +0000
+@@ -3216,7 +3216,8 @@
+     @staticmethod
+     def _has_sriov_port(network_info):
+         for vif in network_info:
+-            if vif['vnic_type'] == network_model.VNIC_TYPE_DIRECT:
++            if (vif['vnic_type'] == network_model.VNIC_TYPE_DIRECT or
++                vif['type'] == "hostdev"):
+                 return True
+         return False
+
+@@ -3230,7 +3231,8 @@
+             flavor, image_meta = self._prepare_args_for_get_config(context,
+                                                                    instance)
+             for vif in network_info:
+-                if vif['vnic_type'] == network_model.VNIC_TYPE_DIRECT:
++                if (vif['vnic_type'] == network_model.VNIC_TYPE_DIRECT or
++                    vif['type'] == "hostdev"):
+                     cfg = self.vif_driver.get_config(instance,
+                                                      vif,
+                                                      image_meta,
+@@ -3259,7 +3261,8 @@
+             flavor, image_meta = self._prepare_args_for_get_config(context,
+                                                                    instance)
+             for vif in network_info:
+-                if vif['vnic_type'] == network_model.VNIC_TYPE_DIRECT:
++                if (vif['vnic_type'] == network_model.VNIC_TYPE_DIRECT or
++                    vif['type'] == "hostdev"):
+                     cfg = self.vif_driver.get_config(instance,
+                                                      vif,
+                                                      image_meta,
