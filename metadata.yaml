@@ -5,7 +5,7 @@ name: mellanox-plugin
 title: Mellanox Openstack features
 
 # Plugin version
-version: 0.2.17
+version: 0.2.18
 
 # Description
 description: Enable features over Mellanox hardware
