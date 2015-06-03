@@ -17,8 +17,4 @@ class mellanox_openstack::snapshot_patch {
     notify      => Service[$compute_service_name]
   }
 
-  service { $compute_service_name :
-    ensure      => running
-  }
-
 }

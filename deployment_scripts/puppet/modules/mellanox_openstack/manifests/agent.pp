@@ -29,10 +29,6 @@ class mellanox_openstack::agent (
             source => 'puppet:///modules/mellanox_openstack/network.filters',
         }
 
-        service { $compute_service_name :
-            ensure => running
-        }
-
         File <| title == '/etc/nova/nova.conf' |> ->
         File[$filters_dir] ->
         File[$filters_file] ~>
@@ -59,10 +55,18 @@ class mellanox_openstack::agent (
         hasrestart => true,
     }
 
+    service { $compute_service_name :
+        ensure     => running,
+        enable     => true,
+        hasstatus  => true,
+        hasrestart => true,
+    }
+
     Package[$package] ->
     File[$mlnx_agent_conf] ->
     Mellanox_agent_config <||> ~>
-    Service[$agent]
+    Service[$agent] ~>
+    Service[$compute_service_name]
 
     Package[$package] ~>
     Service[$agent]
