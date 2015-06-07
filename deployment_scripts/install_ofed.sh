@@ -14,6 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 readonly SCRIPT_DIR=$(dirname "$0")
 source $SCRIPT_DIR/common
 
@@ -24,10 +25,9 @@ readonly OFED_SRC_DIR="${OFED_BASE_DIR}/MLNX_OFED"
 readonly OFED_SUCCESS_FILE="${OFED_BASE_DIR}/.success"
 readonly OFED_INFO="/usr/bin/ofed_info"
 OFED_DIR=$OFED_SRC_DIR
-OFED_INSTALL_SCRIPT_CMD="${OFED_DIR}/mlnxofedinstall"
 
 function is_ofed_installed () {
-  if [ -f ${OFED_SUCCESS_FILE} ] && [ -f ${OFED_INFO} ] && ( ${OFED_INFO} 2>&1 >/dev/null ); then
+  if [ -f ${OFED_SUCCESS_FILE} ] && [ -x ${OFED_INFO} ] && ( ${OFED_INFO} > /dev/null 2>&1 ); then
     installed_ofed_version=`${OFED_INFO} -s`
     logger_print info "OFED is already installed: ${installed_ofed_version}"
     return 0
@@ -55,7 +55,7 @@ function add_kernel_support () {
     return
   fi
   OFED_ADD_KERNEL_SUPPORT_SCRIPT="${OFED_DIR}/mlnx_add_kernel_support.sh"
-  if [ ! -x $OFED_ADD_KERNEL_SUPPORT_SCRIPT ] ; then
+  if [ ! -x $OFED_ADD_KERNEL_SUPPORT_SCRIPT ]; then
     logger_print error "Failed to find $OFED_ADD_KERNEL_SUPPORT_SCRIPT"
     exit 1
   fi
@@ -80,7 +80,7 @@ function add_kernel_support () {
 
 function install_ofed_without_fw_update () {
   OFED_INSTALL_SCRIPT="${OFED_DIR}/mlnxofedinstall"
-  if [ ! -x $OFED_INSTALL_SCRIPT ] ; then
+  if [ ! -f $OFED_INSTALL_SCRIPT ]; then
     logger_print error "Failed to find $OFED_INSTALL_SCRIPT"
     exit 1
   fi
@@ -89,7 +89,7 @@ function install_ofed_without_fw_update () {
   OFED_INSTALL_SCRIPT_CMD="/usr/bin/perl ${OFED_INSTALL_SCRIPT}"
   ${OFED_INSTALL_SCRIPT_CMD} --force --enable-sriov --without-fw-update
   rc=$?
-  if [ $rc -ne 0 ] ;then
+  if [ $rc -ne 0 ]; then
     logger_print error "Failed execute ${OFED_INSTALL_SCRIPT_CMD} error code ${rc}"
     exit 1
   else
@@ -105,14 +105,22 @@ function update_fw_if_not_oem () {
   fi
 
   mstflint -d ${BUS_ID} q | grep -i PSID | grep MT_
-  if [ $? -ne 0 ] ;then
+  if [ $? -ne 0 ]; then
     logger_print info "Not Mellanox Card, skipping firmware upgrade"
     exit 0
   fi
 
+  OFED_INSTALL_SCRIPT="${OFED_DIR}/mlnxofedinstall"
+  if [ ! -f $OFED_INSTALL_SCRIPT ]; then
+    logger_print error "Failed to find $OFED_INSTALL_SCRIPT"
+    exit 1
+  fi
+
   logger_print info "Updating FW on Mellanox HCA with BUS ID = ${BUS_ID}"
-  ${OFED_INSTALL_SCRIPT_CMD} --fw-update-only
-  if [ $? -ne 0 ] ;then
+
+  OFED_INSTALL_SCRIPT_CMD="/usr/bin/perl ${OFED_INSTALL_SCRIPT}"
+  ${OFED_INSTALL_SCRIPT_CMD} --force --enable-sriov --fw-update-only
+  if [ $? -ne 0 ]; then
     logger_print error "Failed execute ${OFED_INSTALL_SCRIPT_CMD} error code $?"
     exit 1
   fi
