@@ -24,10 +24,9 @@ readonly OFED_SRC_DIR="${OFED_BASE_DIR}/MLNX_OFED"
 readonly OFED_SUCCESS_FILE="${OFED_BASE_DIR}/.success"
 readonly OFED_INFO="/usr/bin/ofed_info"
 OFED_DIR=$OFED_SRC_DIR
-OFED_INSTALL_SCRIPT_CMD="${OFED_DIR}/mlnxofedinstall"
 
 function is_ofed_installed () {
-  if [ -f ${OFED_SUCCESS_FILE} ] && [ -f ${OFED_INFO} ] && ( ${OFED_INFO} 2>&1 >/dev/null ); then
+  if [ -f ${OFED_SUCCESS_FILE} ] && [ -x ${OFED_INFO} ] && ( ${OFED_INFO} >/dev/null 2>&1 ); then
     installed_ofed_version=`${OFED_INFO} -s`
     logger_print info "OFED is already installed: ${installed_ofed_version}"
     return 0
@@ -80,7 +79,7 @@ function add_kernel_support () {
 
 function install_ofed_without_fw_update () {
   OFED_INSTALL_SCRIPT="${OFED_DIR}/mlnxofedinstall"
-  if [ ! -x $OFED_INSTALL_SCRIPT ] ; then
+  if [ ! -f $OFED_INSTALL_SCRIPT ] ; then
     logger_print error "Failed to find $OFED_INSTALL_SCRIPT"
     exit 1
   fi
@@ -110,8 +109,16 @@ function update_fw_if_not_oem () {
     exit 0
   fi
 
+  OFED_INSTALL_SCRIPT="${OFED_DIR}/mlnxofedinstall"
+  if [ ! -f $OFED_INSTALL_SCRIPT ] ; then
+    logger_print error "Failed to find $OFED_INSTALL_SCRIPT"
+    exit 1
+  fi
+
   logger_print info "Updating FW on Mellanox HCA with BUS ID = ${BUS_ID}"
-  ${OFED_INSTALL_SCRIPT_CMD} --fw-update-only
+
+  OFED_INSTALL_SCRIPT_CMD="/usr/bin/perl ${OFED_INSTALL_SCRIPT}"
+  ${OFED_INSTALL_SCRIPT_CMD} --force --enable-sriov --fw-update-only
   if [ $? -ne 0 ] ;then
     logger_print error "Failed execute ${OFED_INSTALL_SCRIPT_CMD} error code $?"
     exit 1
@@ -122,7 +129,7 @@ function enable_eipoib (){
   if [ $DRIVER == 'eth_ipoib' ]; then
     sed -i s/^E_IPOIB_LOAD.*$/E_IPOIB_LOAD=yes/g /etc/infiniband/openib.conf
     echo "options ib_ipoib recv_queue_size=128 send_queue_size=128" > /etc/modprobe.d/ipoib.conf
-    \cp -f ./ipoibd /sbin/ipoibd
+    cp -f ./ipoibd /sbin/ipoibd
   fi
 }
 
