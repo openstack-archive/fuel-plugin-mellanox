@@ -19,6 +19,7 @@ source $SCRIPT_DIR/common
 readonly SCRIPT_MODE=$1
 readonly FALLBACK_NUM_VFS=8
 readonly SRIOV_ENABLED_FLAG=1
+readonly VF_MAC_CACHING_TIMEOUT=1
 readonly NEW_KERNEL_PARAM="intel_iommu=on"
 readonly GRUB_FILE_CENTOS="/boot/grub/grub.conf"
 readonly GRUB_FILE_UBUNTU="/boot/grub/grub.cfg"
@@ -32,9 +33,16 @@ function get_port_type() {
   echo $port_type
 }
 
+# Reduce mac caching time since VF is used for iSER with non permanent MAC
+function reduce_mac_caching_timeout () {
+  echo net.ipv4.route.gc_timeout=$VF_MAC_CACHING_TIMEOUT >> /etc/sysctl.conf
+  sysctl -p
+}
+
 function get_num_probe_vfs () {
   if [ $ISER == true ] && [ $DRIVER == 'mlx4_en' ]; then
     probe_vfs=1
+    reduce_mac_caching_timeout
   else
     probe_vfs=0
   fi
