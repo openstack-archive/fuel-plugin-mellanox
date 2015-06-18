@@ -19,6 +19,7 @@ source $SCRIPT_DIR/common
 readonly SCRIPT_MODE=$1
 readonly FALLBACK_NUM_VFS=8
 readonly SRIOV_ENABLED_FLAG=1
+readonly VF_MAC_CACHING_TIMEOUT=1
 readonly NEW_KERNEL_PARAM="intel_iommu=on"
 readonly GRUB_FILE_CENTOS="/boot/grub/grub.conf"
 readonly GRUB_FILE_UBUNTU="/boot/grub/grub.cfg"
@@ -66,6 +67,15 @@ function calculate_total_vfs () {
   echo ${num_of_vfs}
 }
 
+# Reduce mac caching time since VF is used for iSER with non permanent MAC
+function reduce_mac_caching_timeout () {
+  probes=`get_num_probe_vfs`
+  if [[ $probes -gt 0 ]]; then
+    echo net.ipv4.route.gc_timeout=$VF_MAC_CACHING_TIMEOUT >> /etc/sysctl.conf
+    sysctl -p
+  fi
+}
+
 function set_modprobe_file () {
   PROBE_VFS=`get_num_probe_vfs`
   MLX4_CORE_FILE="/etc/modprobe.d/mlx4_core.conf"
@@ -104,6 +114,7 @@ function set_kernel_params () {
     # insert the corrected line on the same line number
     sed -i "${line_num}i\ ${new_kernel_line}" ${grub_file}
   fi
+  reduce_mac_caching_timeout
 }
 
 function burn_vfs_in_fw () {
