@@ -16,6 +16,40 @@
 
 readonly SCRIPT_NAME=`basename $0`
 
+sysctl_conf_no_apply=no
+
+function sysctl_conf (){
+
+  # params
+  op="$1"
+  var="$2"
+  val="$3"
+
+  # apply
+  if [ "x$op" == "xapply" ]; then
+    sysctl -e -p > /dev/null 2>&1
+  fi
+
+  # unset
+  if [ "x$op" == "xunset" -a "x$var" != "x" ]; then
+    sed -e "/^[\t\ ]*$var[\t\ ]*=.*$/d" -i /etc/sysctl.conf
+    if [ "x$sysctl_conf_no_apply" != "xyes" ]; then
+      sysctl_conf apply
+    fi
+  fi
+
+  # set
+  if [ "x$op" == "xset" -a "x$var" != "x" -a "x$val" != "x" ]; then
+    sysctl_conf_no_apply=yes
+    sval="$val"
+    sysctl_conf unset "$var"
+    echo "$var=$sval" >> /etc/sysctl.conf
+    sysctl_conf apply
+    sysctl_conf_no_apply=no
+  fi
+
+}
+
 function logger_print () {
   priority=$1
   msg=$2
