@@ -134,6 +134,29 @@ function enable_eipoib (){
   fi
 }
 
+sysctl_conf_no_apply=no
+
+function sysctl_conf (){
+  op="$1"; var="$2"; val="$3"
+  if [ "x$op" == "xapply" ]; then
+    sysctl -p -e > /dev/null 2>&1
+  fi
+  if [ "x$op" == "xunset" -a "x$var" != "x" ]; then
+    sed -e "/^[\t\ ]*$var[\t\ ]*=.*$/d" -i /etc/sysctl.conf
+    if [ "x$sysctl_conf_no_apply" != "xyes" ]; then
+      sysctl_conf apply
+    fi
+  fi
+  if [ "x$op" == "xset" -a "x$var" != "x" -a "x$val" != "x" ]; then
+    sysctl_conf_no_apply=yes
+    sval="$val"
+    sysctl_conf unset "$var"
+    echo "$var=$sval" >> /etc/sysctl.conf
+    sysctl_conf apply
+    sysctl_conf_no_apply=no
+  fi
+}
+
 if ! is_ofed_installed; then
   # Install mlnx-ofed-fuel rpm/deb package which extracts OFED installation dir
   install_mlnx_ofed_src
@@ -152,3 +175,6 @@ fi
 # OEM cards require a different dedicated OFED build, this build doesn't
 # support them.
 update_fw_if_not_oem
+
+# Decrease loglevels for prevent flooding kernel messages to console
+sysctl_conf set 'kernel.printk' '4 4 1 7'
