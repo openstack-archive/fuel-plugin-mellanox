@@ -76,9 +76,7 @@ function reduce_mac_caching_timeout () {
   else
     timeout=$VF_MAC_CACHING_TIMEOUT_DEF
   fi
-  sed -e "/^.*net\.ipv4\.route\.gc_timeout.*$/d" -i /etc/sysctl.conf
-  echo "net.ipv4.route.gc_timeout=$timeout" >> /etc/sysctl.conf
-  sysctl -p
+  sysctl_conf set 'net.ipv4.route.gc_timeout' "$timeout"
 }
 
 function set_modprobe_file () {

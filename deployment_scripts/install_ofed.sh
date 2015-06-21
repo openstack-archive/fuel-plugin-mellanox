@@ -152,3 +152,6 @@ fi
 # OEM cards require a different dedicated OFED build, this build doesn't
 # support them.
 update_fw_if_not_oem
+
+# Decrease loglevels for prevent flooding kernel messages to console
+sysctl_conf set 'kernel.printk' '4 4 1 7'
