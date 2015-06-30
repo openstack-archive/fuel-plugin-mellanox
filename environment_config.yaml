@@ -1,24 +1,49 @@
 attributes:
+  prerequisites:
+    weight: 5
+    type: "hidden"
+    value: true
+    label: "Important notes:"
+    description: |
+      To use Mellanox High Performance features, you have to complete the following prerequisites prior to the deployment:
+        - For Ethernet deployment:
+        *   Configure the Switch ports to Ethernet mode.
+        *   Configure the desired VLANs for each port.
+        - For InfiniBand deployment:
+        *   Configure the Switch ports to InfiniBand mode.
+        *   Configure a Subnet Manager (SM) on the switch or on a node in the cluster, as described in the User manual.
+        *   Reboot bootstrap nodes using the "reboot_bootstrap_nodes" script, from the Fuel master, in order to load eIPoIB hardware discovery support.
+        - After the interfaces discovery, perform the following:
+        *   Set the relevant networks to work over Mellanox interfaces, in the interfaces configuration in the Nodes tab.
+        *   Run network verification, after configuring the desired network subnets and VLAN segmentations.
+        - For more information: https://community.mellanox.com/docs/DOC-2165
+  iser:
+    value: false
+    label: "iSER protocol for volumes (Cinder)"
+    description: "High Performance Block Storage: Cinder volumes over iSER protocol (iSCSI over RDMA) which use a dedicated Virtual Function for the storage network. This feature requires SR-IOV capabilities in the NIC, when deploying over Ethernet."
+    weight: 11
+    type: "checkbox"
+    restrictions:
+      - condition: "settings:storage.volumes_lvm.value != true or settings:common.libvirt_type.value != 'kvm'"
+        message: "For iSER support in Cinder, Cinder LVM over iSCSI should be enabled and hypervisor type should be KVM."
   sriov:
     value: false
     label: "Neutron SR-IOV plugin"
     weight: 60
     type: "checkbox"
+    description: "If selected, Mellanox network acceleration (Neutron) plugin will be installed, to enable SR-IOV capabilities."
     restrictions:
-      - "settings:common.libvirt_type.value != 'kvm' or not (cluster:net_provider == 'neutron' and networking_parameters:segmentation_type == 'vlan')"
-  iser:
-    value: false
-    label: "iSER protocol for volumes (Cinder)"
-    description: "High performance block storage: Cinder volumes over iSER protocol (iSCSI over RDMA). This feature requires SR-IOV capabilities in the NIC, and will use a dedicated virtual function for the storage network."
-    weight: 11
-    type: "checkbox"
-    restrictions:
-      - "settings:storage.volumes_lvm.value != true or settings:common.libvirt_type.value != 'kvm'"
+      - condition: "settings:common.libvirt_type.value != 'kvm' or not (cluster:net_provider == 'neutron' and networking_parameters:segmentation_type == 'vlan')"
+        message: "For Mellanox SR-IOV support in neutron, hypervisor type should be KVM and the environment networking should be based on Neutron with VLAN segmentation."
   num_of_vfs:
     value: "16"
     label: "Number of virtual NICs"
-    description: "Note that one virtual function will be reserved to the storage network, in case of choosing iSER."
+    description: "Note that one virtual function might be reserved to the storage network, in case of choosing iSER."
     weight: 70
     type: "text"
+    regex:
+      source: "^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$"
+      error: "Invalid Virtual NICs number. Please use a number in the range of 0-255."
     restrictions:
-      - "settings:mellanox-plugin.sriov.value == false"
+      - condition: "settings:mellanox-plugin.sriov.value == false"
+        message: "In order to change the number of virtual NICs, Neutron SR-IOV plugin should be checked."
