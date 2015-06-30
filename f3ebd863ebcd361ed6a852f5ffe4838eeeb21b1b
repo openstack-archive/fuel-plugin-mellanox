@@ -1,0 +1,8 @@
+Verified+2: Jenkins
+Code-Review+2: Aviram Bar-Haim <aviramb@mellanox.com>
+Workflow+1: Aviram Bar-Haim <aviramb@mellanox.com>
+Submitted-by: Jenkins
+Submitted-at: Tue, 30 Jun 2015 09:13:42 +0000
+Reviewed-on: https://review.openstack.org/196982
+Project: stackforge/fuel-plugin-mellanox
+Branch: refs/heads/master
