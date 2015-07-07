@@ -49,6 +49,13 @@ function sysctl_conf (){
   fi
 }
 
+function logger_stderr_print () {
+  priority=$1
+  msg=$2
+  echo "${priority}: ${msg}" 1>&2
+  logger_print "${priority}" "${msg}"
+}
+
 function logger_print () {
   priority=$1
   msg=$2

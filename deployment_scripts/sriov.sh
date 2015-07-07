@@ -48,8 +48,7 @@ function calculate_total_vfs () {
   if [ "${USER_NUM_OF_VFS}" -ne "${USER_NUM_OF_VFS}" ] 2>/dev/null ||
       [ "${USER_NUM_OF_VFS}" -gt ${MAX_VFS} ] ||
       [ "${USER_NUM_OF_VFS}" -lt ${MIN_VFS} ]; then
-    logger_print error "Illegal number of VFs ${USER_NUM_OF_VFS}, value
-                        should be an integer between ${MIN_VFS},${MAX_VFS}"
+    logger_print error "Illegal number of VFs ${USER_NUM_OF_VFS}, value should be an integer between ${MIN_VFS},${MAX_VFS}"
     return 1
   fi
   num_of_vfs=0
@@ -63,7 +62,9 @@ function calculate_total_vfs () {
   fi
   # Enforce even num of vfs
   if [ $((${num_of_vfs} % 2)) -eq 1 ]; then
+    num_of_vfs_old=$num_of_vfs
     let num_of_vfs="${num_of_vfs} + 1" # number of vfs is odd and <= 64, then +1 is legal
+    logger_stderr_print info "Number of VFs changed from ${num_of_vfs_old} to ${num_of_vfs}, only even number is currently supported"
   fi
   echo ${num_of_vfs}
 }
@@ -83,10 +84,7 @@ function set_modprobe_file () {
   PROBE_VFS=`get_num_probe_vfs`
   MLX4_CORE_FILE="/etc/modprobe.d/mlx4_core.conf"
   PORT_TYPE=`get_port_type`
-  MLX4_CORE_STR="options mlx4_core
-                 enable_64b_cqe_eqe=0
-                 log_num_mgm_entry_size=-1
-                 port_type_array=${PORT_TYPE},${PORT_TYPE}"
+  MLX4_CORE_STR="options mlx4_core enable_64b_cqe_eqe=0 log_num_mgm_entry_size=-1 port_type_array=${PORT_TYPE},${PORT_TYPE}"
   TOTAL_VFS=$1
   if [[ $TOTAL_VFS -gt 0 ]]; then
     MLX4_CORE_STR="${MLX4_CORE_STR} num_vfs=${TOTAL_VFS}"
@@ -107,7 +105,7 @@ function set_kernel_params () {
   fi
 
   if [[ $? -ne 0 ]]; then
-    echo "Couldn't find kernel line in grub file" >&2 && return 1
+    echo "Could not find kernel line in grub file" >&2 && return 1
   fi
   if ! grep -q ${NEW_KERNEL_PARAM} ${grub_file} ; then
     line_num=$(echo "$(grep -n "${kernel_line}" ${grub_file} |cut -f1 -d: )" | head -1)
@@ -162,8 +160,7 @@ function configure_sriov () {
     if [ -z ${total_vfs} ]; then
       exit 1
     fi
-    logger_print info "Configuring ${total_vfs} virtual functions
-                       (only even number is currently supported)"
+    logger_print info "Configuring ${total_vfs} virtual functions"
     set_modprobe_file $total_vfs &&
     set_kernel_params &&
     burn_vfs_in_fw $total_vfs
@@ -179,8 +176,7 @@ function validate_sriov () {
     logger_print info "Skipping SR-IOV validation, no virtual functions required"
     return 0
   fi
-  logger_print info "Validating SR-IOV is enabled, and the required
-                     amount of virtual functions exist"
+  logger_print info "Validating SR-IOV is enabled, and the required amount of virtual functions exist"
   # get number of VFs
   current_num_vfs=`lspci | grep -i mellanox | grep -i virtual | wc -l`
   total_vfs=`calculate_total_vfs`
@@ -196,21 +192,20 @@ function validate_sriov () {
       return 0
     fi
   else
-    logger_print error "Kernel did not come up with the kernel parameter: ${NEW_KERNEL_PARAM},
-                        SR-IOV configuration failed"
+    logger_print error "Kernel did not come up with the kernel parameter: ${NEW_KERNEL_PARAM}, SR-IOV configuration failed"
     return 1
   fi
 
-  # fallback only if kernel param exists and amount of vfs is not as expcted
-  logger_print error "Failed , trying to fallback to ${FALLBACK_NUM_VFS}"
+  # fallback only if kernel param exists and amount of vfs is not as expected
+  logger_stderr_print error "Failed enable SR-IOV with ${current_num_vfs} VFs, trying to fallback to ${FALLBACK_NUM_VFS} VFs"
   set_modprobe_file $FALLBACK_NUM_VFS
   service openibd restart &> /dev/null
   current_num_vfs=`lspci | grep -i mellanox | grep -i virtual | wc -l`
   if [ $current_num_vfs -eq $FALLBACK_NUM_VFS ]; then
-    logger_print info "Fallback to ${FALLBACK_NUM_VFS} succeeded"
+    logger_stderr_print info "Configure SR-IOV with ${FALLBACK_NUM_VFS} VFs succeeded"
     return 0
   else
-    logger_print error "Failed to configure SR-IOV"
+    logger_stderr_print error "Failed to configure SR-IOV with ${FALLBACK_NUM_VFS} VFs"
     return 1
   fi
 }
