@@ -122,23 +122,35 @@ function set_kernel_params () {
 
 function burn_vfs_in_fw () {
   total_vfs=$1
-  # required for mlxconfig to discover mlnx devices
-  service openibd start &>/dev/null
-  service mst start &>/dev/null
+  # required for discover mlnx devices
+  {
+    service mst stop
+    service openibd restart
+    service mst start
+  } &> /dev/null
   devices=$(mst status | grep pciconf | awk '{print $1}')
   for dev in $devices; do
     logger_print debug "device=$dev"
-    mlxconfig -d $dev q | grep SRIOV | awk '{print $2}' | grep $SRIOV_ENABLED_FLAG  &>/dev/null
-    sriov_enabled=$?
-    current_num_of_vfs=`mlxconfig -d $dev q | grep NUM_OF_VFS | awk '{print $2}'`
-    if [ $sriov_enabled -eq 0 ] 2>/dev/null; then
+    flint_sriov_en=''
+    flint_total_vfs=''
+    flint_output=`flint -d $dev dc 2> /dev/null | \
+		    tr '[:upper:]' '[:lower:]' | \
+		    tr '\t' ' ' | \
+		    sed -n 's/^ *\(sriov_en\|total_vfs\) *\(=\) *\(.*\)$/flint_\1\2\3/p' | \
+		    tr '\n' ';'`
+    eval "$flint_output" &> /dev/null
+    sriov_enabled=1
+    [ "x$flint_sriov_en" == "xtrue" ] && sriov_enabled=0
+    current_num_of_vfs=`expr "$flint_total_vfs" \+ 0 2> /dev/null`
+    [ "x$current_num_of_vfs" == "" ] && current_num_of_vfs=0
+    if [ $sriov_enabled -eq 0 ] 2> /dev/null; then
       logger_print debug "Detected SR-IOV is already enabled"
     else
       logger_print debug "Detected SR-IOV is disabled"
     fi
-    if [[ ! "$total_vfs" == "$current_num_of_vfs" ]] 2>/dev/null; then
+    if [[ ! "$total_vfs" == "$current_num_of_vfs" ]] 2> /dev/null; then
       logger_print debug "Current allowed number of VFs is ${current_num_of_vfs}, required number is ${total_vfs}"
-      mlxconfig -y -d $dev s SRIOV_EN=1 NUM_OF_VFS=$total_vfs 2>&1 >/dev/null
+      mlxconfig -y -d $dev s SRIOV_EN=1 NUM_OF_VFS=$total_vfs &> /dev/null
       if [ $? -ne 0 ]; then
         logger_print error "Failed changing number of VFs in FW for HCA ${dev}"
       fi
@@ -146,7 +158,7 @@ function burn_vfs_in_fw () {
       logger_print debug "Current number of VFs is correctly set to ${current_num_of_vfs} in FW."
     fi
   done
-  service mst stop &>/dev/null
+  service mst stop &> /dev/null
 }
 
 function is_sriov_required () {
