@@ -37,7 +37,7 @@
   type: shell
   parameters:
     cmd: ./install_ofed.sh
-    timeout: 1200
+    timeout: 3600
 # Configure number of VFs according to the user decision:
 # change modprobe file + IOMMU in grub file + change VFs num in FW
 - role: '*'
