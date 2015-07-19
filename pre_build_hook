@@ -16,7 +16,7 @@
 
 readonly PLUGIN_DIR="$(dirname $0)"
 readonly PLUGIN_VERSION=`cat $PLUGIN_DIR/.version`
-readonly LOCAL_REPOSITORY_PATH='10.212.14.8/mellanox_plugin/'
+readonly LOCAL_REPOSITORY_PATH='10.212.14.8/mellanox_fuel_plugin/'
 readonly PUBLIC_REPOSITORY_PATH='www.mellanox.com/repository/solutions/openstack/mellanox_fuel_plugin/'
 
 if [ -z "$REPOSITORY_PATH" ]; then
