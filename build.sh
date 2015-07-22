@@ -51,7 +51,7 @@ git clone https://github.com/stackforge/fuel-plugins.git $TMP_DIR/fuel-plugins |
 fail_on_error "Failed cloning fuel-plugin-builder git repository"
 
 # Append bootstrap post install to the spec
-cat specs/post.spec >> $PLUGIN_BUILDER_DIR/fuel_plugin_builder/templates/build/plugin_rpm.spec.mako
+cat specs/post.spec >> $PLUGIN_BUILDER_DIR/fuel_plugin_builder/templates/v2/build/plugin_rpm.spec.mako
 
 # Install plugin builder
 pushd $PLUGIN_BUILDER_DIR > /dev/null
