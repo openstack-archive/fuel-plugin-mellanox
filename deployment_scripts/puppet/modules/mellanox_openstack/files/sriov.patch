@@ -1,16 +1,30 @@
---- /usr/lib/python2.7/dist-packages/nova/virt/libvirt/driver.py	2015-05-15 15:07:11.000000000 +0000
-+++ /usr/lib/python2.7/dist-packages/nova/virt/libvirt/driver_new.py	2015-05-28 18:37:12.073191065 +0000
-@@ -3216,7 +3216,8 @@
+--- /usr/lib/python2.7/site-packages/nova/virt/libvirt/designer.py	2014-10-27 15:16:56.969437668 +0000
++++ /usr/lib/python2.7/site-packages/nova/virt/libvirt/designer.py	2014-10-27 15:18:40.350049577 +0000
+@@ -168,3 +168,11 @@
+         if len(scope) > 1 and scope[0] == 'quota':
+             if scope[1] in bandwidth_items:
+                 setattr(conf, scope[1], value)
++
++def set_vif_host_backend_hostdev_config(conf, devname):
++    """Populate a LibvirtConfigGuestInterface instance
++    with hostdev Interface.
++    """
++
++    conf.domain, conf.bus, conf.slot, conf.function = \
++    pci_utils.get_pci_address_fields(devname)
+--- /usr/lib/python2.7/site-packages/nova/virt/libvirt/driver.py	2015-05-05 01:16:40.000000000 +0300
++++ /usr/lib/python2.7/site-packages/nova/virt/libvirt/driver.py	2015-07-09 15:33:40.531293093 +0300
+@@ -2932,7 +2932,8 @@ class LibvirtDriver(driver.ComputeDriver
      @staticmethod
      def _has_sriov_port(network_info):
          for vif in network_info:
 -            if vif['vnic_type'] == network_model.VNIC_TYPE_DIRECT:
-+            if (vif['vnic_type'] == network_model.VNIC_TYPE_DIRECT or
++            if (vif['vnic_type'] == network_model.VNIC_TYPE_DIRECT or 
 +                vif['type'] == "hostdev"):
                  return True
          return False
-
-@@ -3230,7 +3231,8 @@
+ 
+@@ -2946,7 +2947,8 @@ class LibvirtDriver(driver.ComputeDriver
              flavor, image_meta = self._prepare_args_for_get_config(context,
                                                                     instance)
              for vif in network_info:
@@ -20,7 +34,7 @@
                      cfg = self.vif_driver.get_config(instance,
                                                       vif,
                                                       image_meta,
-@@ -3259,7 +3261,8 @@
+@@ -2975,7 +2977,8 @@ class LibvirtDriver(driver.ComputeDriver
              flavor, image_meta = self._prepare_args_for_get_config(context,
                                                                     instance)
              for vif in network_info:
@@ -30,3 +44,96 @@
                      cfg = self.vif_driver.get_config(instance,
                                                       vif,
                                                       image_meta,
+--- /usr/lib/python2.7/site-packages/nova/virt/libvirt/vif.py	2014-10-27 15:16:56.972437570 +0000
++++ /usr/lib/python2.7/site-packages/nova/virt/libvirt/vif.py	2014-10-27 15:18:46.592844974 +0000
+@@ -332,6 +332,38 @@
+ 
+         return conf
+ 
++    def get_config_hostdev(self, instance, vif, image_meta,
++                               inst_type, virt_type):
++        conf = vconfig.LibvirtConfigGuestHostdevPCI()
++        #dev_name = None
++        dev = None
++        device_id = instance['uuid']
++        vnic_mac = vif['address']
++        network = vif['network']
++        fabric = vif.get_physical_network()
++        if not fabric:
++            raise exception.NetworkMissingPhysicalNetwork(
++                network_uuid=vif['network']['id'])
++
++        try:
++            res = utils.execute('ebrctl', 'allocate-port',
++                                vnic_mac, device_id, fabric,
++                                'hostdev', run_as_root=True)
++
++        except processutils.ProcessExecutionError:
++            LOG.exception(_("Failed while config vif"),
++                          instance=instance)
++            raise exception.NovaException(_("Processing Failure during "
++                                            "vNIC allocation"))
++            #Allocation Failed
++        if res:
++            dev = res[0].strip()
++        else:
++            raise exception.NovaException(_("Failed to allocate "
++                                            "device for vNIC"))
++        designer.set_vif_host_backend_hostdev_config(conf, dev)
++        return conf
++
+     def get_config(self, instance, vif, image_meta,
+                    inst_type, virt_type):
+         vif_type = vif['type']
+@@ -477,6 +509,29 @@
+         except processutils.ProcessExecutionError:
+             LOG.exception(_LE("Failed while plugging vif"), instance=instance)
+ 
++    def plug_hostdev(self, instance, vif):
++        network = vif['network']
++        vnic_mac = vif['address']
++        device_id = instance['uuid']
++        dev_name = None
++        dev = None
++        fabric = vif.get_physical_network()
++        if not fabric:
++            raise exception.NetworkMissingPhysicalNetwork(
++                network_uuid=vif['network']['id'])
++
++        try:
++            dev = utils.execute('ebrctl', 'add-port', vnic_mac,
++                                device_id, fabric, 'hostdev', dev_name,
++                                run_as_root=True)
++            if dev:
++                return
++            else:
++                error_msg = "Cannot plug VIF with no allocated device"
++                LOG.warning(_(error_msg))
++        except Exception:
++            LOG.exception(_("Processing Failure during vNIC plug"))
++
+     def plug_802qbg(self, instance, vif):
+         pass
+ 
+@@ -625,6 +680,21 @@
+             LOG.exception(_LE("Failed while unplugging vif"),
+                           instance=instance)
+ 
++    def unplug_hostdev(self, instance, vif):
++        network = vif['network']
++        vnic_mac = vif['address']
++        fabric = vif.get_physical_network()
++
++        if not fabric:
++            raise exception.NetworkMissingPhysicalNetwork(
++                network_uuid=vif['network']['id'])
++
++        try:
++            utils.execute('ebrctl', 'del-port', fabric,
++                          vnic_mac, run_as_root=True)
++        except Exception:
++            LOG.exception(_("Failed while unplugging vif"))
++
+     def unplug_802qbg(self, instance, vif):
+         pass
+ 

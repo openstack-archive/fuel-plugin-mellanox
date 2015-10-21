@@ -4,7 +4,7 @@ class mellanox_openstack::compute_sriov (
 ) {
 
   include nova::params
-  $libvirt_service_name = $nova::params::libvirt_service_name
+  $libvirt_service_name = 'libvirtd'#$nova::params::libvirt_service_name
   $libvirt_package_name = $nova::params::libvirt_package_name
 
   class { 'mellanox_openstack::eswitchd' :
