@@ -26,7 +26,7 @@ fail_on_error "Mellanox plugin build script supports only Redhat/CentOS 6"
 
 readonly TOP_DIR=`dirname $0`
 readonly TMP_DIR='/tmp'
-readonly PLUGIN_BUILDER_DIR="$TMP_DIR/fuel-plugins/fuel_plugin_builder"
+readonly PLUGIN_BUILDER_DIR="$TMP_DIR/fuel-plugins/"
 readonly PLUGIN_BUILDER_PACKAGE_DIR="$PLUGIN_BUILDER_DIR/dist"
 pushd $TOP_DIR > /dev/null
 
