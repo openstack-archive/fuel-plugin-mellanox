@@ -58,42 +58,27 @@ class MellanoxSettings(object):
     def get_interface_by_network(cls, network):
         if network not in ('management', 'storage', 'private'):
            raise MellanoxSettingsException("Unknown network: {0}".format(network))
-        br_name = cls.get_bridge_for_network(network)
-        endpoints = cls.get_endpoints_section()
-        ifc = endpoints[br_name]['vendor_specific']['phy_interfaces'][0]
+        mlnx_interfaces_section = cls.get_mlnx_interfaces_section()
+        ifc = mlnx_interfaces_section[network]['interface']
         return ifc
 
     @classmethod
     def add_driver(cls):
         interfaces = cls.get_interfaces_section()
         mlnx = cls.get_mlnx_section()
-
-        # validation that no more than 1 mellanox driver is used
-        interfaces_drivers = {}
-        for ifc in cls.get_physical_interfaces():
-            if ('driver' not in interfaces[ifc]['vendor_specific']) :
-                raise MellanoxSettingsException(
-                    "Couldn't find 'driver' for interface '{0}'".format(ifc)
-                )
-            interfaces_drivers[ifc] = interfaces[ifc]['vendor_specific']['driver']
-        mlnx_drivers = dict(
-            (ifc, drv) for (ifc, drv) in interfaces_drivers.iteritems()
-            if drv in MLNX_DRIVERS_LIST
-        )
-        if len(set(mlnx_drivers.values())) > 1:
+        drivers = cls.get_physical_interfaces()
+        if len(drivers) > 1:
             raise MellanoxSettingsException(
                 "Found mismatching Mellanox drivers on different interfaces: "
                 "{0}".format(mlnx_drivers)
             )
-        if len(set(mlnx_drivers.values())) == 0:
+        if len(drivers) == 0:
             raise MellanoxSettingsException(
                 "\nNo Network role was assigned to Mellanox interfaces. "
                 "\nPlease go to nodes tab in Fuel UI and reset your network "
                 "roles in interfaces screen. aborting. "
             )
-
-        # add the driver to the yaml
-        mlnx['driver'] = mlnx_drivers.values().pop()
+        mlnx['driver'] = drivers[0]
 
     @classmethod
     def add_physical_port(cls):
@@ -114,9 +99,9 @@ class MellanoxSettings(object):
     @classmethod
     def add_storage_vlan(cls):
         mlnx = cls.get_mlnx_section()
-        endpoints = cls.get_endpoints_section()
-        vlan = endpoints['br-storage']['vendor_specific'].get('vlans')
-        # set storage vlan in mlnx section if vlan is used with iser
+        mlnx_interfaces_section = cls.get_mlnx_interfaces_section()
+        vlan = mlnx_interfaces_section['storage']['vlan']
+        # Set storage vlan in mlnx section if vlan is used with iser
         if vlan:
             try:
                 mlnx['storage_vlan'] = int(vlan)
@@ -176,21 +161,23 @@ class MellanoxSettings(object):
                 'vlan_id': int(storage_vlan),
                 'vlan_dev': ISER_IFC_NAME
             })
-            endpoints['br-storage']['vendor_specific']['phy_interfaces'] = [ ISER_IFC_NAME ]
             endpoints[vlan_name] = (
                 endpoints.pop('br-storage', {})
             )
-        else:
-            # Set storage rule to iSER port
-            cls.data['network_scheme']['roles']['storage'] = \
-                mlnx['iser_ifc_name']
+            for role,bridge in cls.data['network_scheme']['roles'].iteritems():
+                if bridge == 'br-storage':
+                    cls.data['network_scheme']['roles'][role] = vlan_name
 
-            # Set iSER endpoint with br-storage parameters
-            endpoints[mlnx['iser_ifc_name']] = (
-                endpoints.pop('br-storage', {})
-            )
-            interfaces[mlnx['iser_ifc_name']] = {}
+                else:
+                    # Set storage rule to iSER port
+                    cls.data['network_scheme']['roles']['storage'] = \
+                        mlnx['iser_ifc_name']
 
+                    # Set iSER endpoint with br-storage parameters
+                    endpoints[mlnx['iser_ifc_name']] = (
+                        endpoints.pop('br-storage', {})
+                    )
+                    interfaces[mlnx['iser_ifc_name']] = {}
         if storage_vlan: \
             storage_parent = "{0}.{1}".format(storage_parent, storage_vlan)
         transformations.remove({
@@ -205,25 +192,13 @@ class MellanoxSettings(object):
 
     @classmethod
     def get_physical_interfaces(cls):
-        endpoints = cls.get_endpoints_section()
-        interfaces = cls.get_interfaces_section()
-        mlnx_phys_ifcs = []
-        for ep in endpoints:
-            # skip non physical interfaces
-            if ('vendor_specific' not in endpoints[ep] or
-                    'phy_interfaces' not in endpoints[ep]['vendor_specific']):
-                continue
-            phys_ifc = endpoints[ep]['vendor_specific']['phy_interfaces'][0]
-            if ('vendor_specific' not in interfaces[phys_ifc] or
-                    'driver' not in interfaces[phys_ifc]['vendor_specific']):
-                raise MellanoxSettingsException(
-                    "Missing 'vendor_specific' or 'driver' "
-                    "in {0}".format(phys_ifc)
-                )
-            if (interfaces[phys_ifc]['vendor_specific']['driver'] in
-                    MLNX_DRIVERS_LIST):
-                mlnx_phys_ifcs.append(phys_ifc)
-        return list(set(mlnx_phys_ifcs))
+        # the main change will be here because it reads phy_interfaces
+        mlnx_interfaces = cls.get_mlnx_interfaces_section()
+        drivers = list()
+        for network_type, ifc_dict in mlnx_interfaces.iteritems():
+             if ( ifc_dict['driver'] in MLNX_DRIVERS_LIST):
+                  drivers.append(ifc_dict['driver'])
+        return list(set(drivers))
 
     @classmethod
     def get_interfaces_section(cls):
@@ -235,6 +210,7 @@ class MellanoxSettings(object):
 
     @classmethod
     def update_role_settings(cls):
+        cls.get_mlnx_interfaces_section()
         # realize the driver in use (eth/ib)
         cls.add_driver()
         # decide the physical function for SR-IOV
@@ -305,6 +281,43 @@ class MellanoxSettings(object):
             logging.error(error_msg)
             raise MellanoxSettingsException("Failed updating one or more "
                                             "setting files")
+    @classmethod
+    def get_mlnx_interfaces_section(cls):
+        try:
+            transformations = cls.data['network_scheme']['transformations']
+            in_keys = ['bridge', 'interface', 'vlan', 'driver']
+            out_keys = ['management', 'storage', 'private', 'public' , 'admin']
+            dict_of_interfaces = dict((h, dict()) for h in out_keys)
+            for transformation in transformations:
+                if transformation['action'] == 'add-port':
+                  if transformation['bridge'] == 'br-fw-admin':
+                                network_type = 'admin'
+                  elif transformation['bridge'] == 'br-ex':
+                                network_type = 'public'
+                  elif transformation['bridge'] == 'br-aux':
+                                network_type = 'private'
+                  elif transformation['bridge'] == 'br-mgmt':
+                                network_type = 'management'
+                  elif transformation['bridge'] == 'br-storage':
+                                network_type = 'storage'
+
+                  mlnx_interfaces = dict((h, None) for h in in_keys)
+                  mlnx_interfaces['bridge'] = transformation['bridge']
+
+                  interface = transformation['name'].split('.')[0]
+                  mlnx_interfaces['interface'] = interface
+
+                  if len(transformation['name'].split('.')) > 1:
+                      vlan = transformation['name'].split('.')[1]
+                  else:
+                      vlan = str(1)
+                  mlnx_interfaces['vlan'] = vlan
+                  mlnx_interfaces['driver'] = cls.data['network_scheme']['interfaces'][interface]['vendor_specific']['driver']
+                  dict_of_interfaces[network_type]=mlnx_interfaces
+        except:
+           print "Unexpected error:", sys.exc_info()[0]
+           raise
+        return dict_of_interfaces
 
 def main():
     logging.basicConfig(format='%(asctime)s %(message)s',
