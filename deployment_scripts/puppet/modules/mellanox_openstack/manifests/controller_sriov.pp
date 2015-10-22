@@ -10,6 +10,13 @@ class mellanox_openstack::controller_sriov (
   $server_service = $neutron::params::server_service
   $dhcp_agent = $neutron::params::dhcp_agent_service
 
+  include mellanox_openstack::params
+  $package              = $::mellanox_openstack::params::neutron_mlnx_packages_controller
+
+  package { $package :
+        ensure => installed,
+  }
+
   neutron_plugin_ml2 {
     'eswitch/vnic_type':            value => $eswitch_vnic_type;
     'eswitch/apply_profile_patch':  value => $eswitch_apply_profile_patch;
@@ -20,6 +27,7 @@ class mellanox_openstack::controller_sriov (
     ensure => running
   }
 
+  Package[$package] ->
   Neutron_plugin_ml2 <||> ~>
   Service[$server_service]
 
