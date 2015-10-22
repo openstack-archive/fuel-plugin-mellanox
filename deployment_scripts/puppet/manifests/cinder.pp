@@ -1,8 +1,8 @@
+prepare_network_config(hiera('network_scheme', {}))
 $mlnx = hiera('mellanox-plugin')
-$storage_address = hiera('storage_address')
 
 if ($mlnx['iser']) {
   class { 'mellanox_openstack::cinder_iser' :
-    iser_ip_address => $storage_address,
+    iser_ip_address => get_network_role_property('cinder/iscsi', 'ipaddr'),
   }
 }

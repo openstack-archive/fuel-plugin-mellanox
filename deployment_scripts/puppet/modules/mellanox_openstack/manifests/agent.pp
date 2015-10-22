@@ -4,7 +4,7 @@ class mellanox_openstack::agent (
 ) {
     include mellanox_openstack::params
 
-    $package              = $::mellanox_openstack::params::neutron_mlnx_packages
+    $package              = $::mellanox_openstack::params::neutron_mlnx_packages_compute
     $agent                = $::mellanox_openstack::params::agent_service
     $filters_dir          = $::mellanox_openstack::params::filters_dir
     $filters_file         = $::mellanox_openstack::params::filters_file
@@ -40,7 +40,6 @@ class mellanox_openstack::agent (
     }
 
     mellanox_agent_config {
-        'agent/rpc_support_old_agents'        : value => true;
         'eswitch/physical_interface_mappings' : value => "${physnet}:${physifc}";
     }
 
