@@ -14,7 +14,8 @@ class mellanox_openstack::params {
       $libvirt_driver_file      = '/usr/lib/python2.6/site-packages/nova/virt/libvirt/driver.py'
     }
     'Debian': {
-      $neutron_mlnx_packages    = ['neutron-plugin-mlnx','neutron-plugin-mlnx-agent', 'python-networking-mlnx']
+      $neutron_mlnx_packages_compute    = ['neutron-plugin-mlnx','neutron-plugin-mlnx-agent', 'python-networking-mlnx']
+      $neutron_mlnx_packages_controller = ['python-networking-mlnx']
       $agent_service            = ['neutron-plugin-mlnx-agent']
       $compute_service_name     = 'nova-compute'
       $openvswitch_mgmt_service = 'openvswitch-switch'
