@@ -6,11 +6,21 @@ if [ -d "/var/www/nailgun/bootstrap/" ]; then
   fi
   # If an old bootstrap already exists in the backup dir do not override it with the plugins's new bootstrap
   if [ ! -f /opt/old_bootstrap_image/initramfs.img ]; then
-    mv /var/www/nailgun/bootstrap/initramfs.img /opt/old_bootstrap_image/
-    mv /var/www/nailgun/bootstrap/linux /opt/old_bootstrap_image/
+    if [[ `grep release /etc/fuel/version.yaml | grep "7.0"` ]]; then
+      cp /var/www/nailgun/bootstrap/initramfs.img /opt/old_bootstrap_image/
+      cp /var/www/nailgun/bootstrap/linux /opt/old_bootstrap_image/
+    else
+      mv /var/www/nailgun/bootstrap/initramfs.img /opt/old_bootstrap_image/
+      mv /var/www/nailgun/bootstrap/linux /opt/old_bootstrap_image/
+    fi
   fi
-  \cp $(ls /var/www/nailgun/plugins/mellanox-plugin*/bootstrap/initramfs.img) /var/www/nailgun/bootstrap/
-  \cp $(ls /var/www/nailgun/plugins/mellanox-plugin*/bootstrap/linux) /var/www/nailgun/bootstrap/
+
+  if [[ `grep release /etc/fuel/version.yaml | grep "7.0"` ]]; then
+    echo "Fuel 7.0: use Mirantis bootstrap."
+  else
+    \cp $(ls /var/www/nailgun/plugins/mellanox-plugin*/bootstrap/initramfs.img) /var/www/nailgun/bootstrap/
+    \cp $(ls /var/www/nailgun/plugins/mellanox-plugin*/bootstrap/linux) /var/www/nailgun/bootstrap/
+  fi
   command -v dockerctl >/dev/null 2>&1
   if [ $? -eq 0  ];then
     dockerctl copy /var/www/nailgun/bootstrap/initramfs.img cobbler:/var/lib/tftpboot/images/bootstrap/initramfs.img
