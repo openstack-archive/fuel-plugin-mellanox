@@ -152,7 +152,7 @@ class MellanoxSettings(object):
         storage_vlan = mlnx.get('storage_vlan')
         storage_parent = cls.get_interface_by_network('storage')
         if storage_vlan and mlnx['driver'] == 'mlx4_en': # Use VLAN dev
-            vlan_name = "{0}.{1}".format(ISER_IFC_NAME, storage_vlan)
+            vlan_name = "{0}{1}".format('vlan', storage_vlan)
             # Set storage rule to iSER interface vlan interface
             cls.data['network_scheme']['roles']['storage'] = vlan_name
             # Set iSER interface vlan interface
@@ -160,7 +160,8 @@ class MellanoxSettings(object):
                 'action': 'add-port',
                 'name': vlan_name,
                 'vlan_id': int(storage_vlan),
-                'vlan_dev': ISER_IFC_NAME
+                'vlan_dev': ISER_IFC_NAME,
+                'mtu': '1500'
             })
             endpoints[vlan_name] = (
                 endpoints.pop('br-storage', {})
