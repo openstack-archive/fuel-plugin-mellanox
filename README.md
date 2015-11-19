@@ -16,12 +16,15 @@ enable network traffic to bypass the software switch layer (e.g. Open vSwitch).
 Starting with version 6.1, Mellanox plugin can deploy those features over
 Infiniband network as well.
 
+However, for Fuel version 7.0, plugin uses Mirantis bootstrap images and 
+therefore only Ethernet Network is supported.
+
 Requirements
 ------------
 
 | Requirement                      | Version/Comment |
 |:---------------------------------|:----------------|
-| Mirantis OpenStack compatibility | >= 6.1          |
+| Mirantis OpenStack compatibility | 7.0             |
 
 The Mellanox ConnectX-3 Pro adapters family supports up to 40/56GbE.
 To reach 56 GbE speed in your network with ConnectX-3 Pro adapters, you must
@@ -50,13 +53,14 @@ To install Mellanox plugin, follow these steps:
     that. If you do not have the Fuel Master node yet, see
     [Quick Start Guide](https://software.mirantis.com/quick-start/) :
 
-        # scp mellanox-plugin-1.0-1.0.0-0.noarch.rpm root@<Fuel_Master_ip>:/tmp
+        # scp mellanox-plugin-2.0-2.0.0-1.noarch.rpm root@<Fuel_Master_ip>:/tmp
 
 3. Install the plugin:
 
         # cd /tmp
-        # fuel plugins --install mellanox-plugin-1.0-1.0.0-0.noarch.rpm
-        NOTE: Mellanox plugin installation replaces your bootstrap image.
+        # fuel plugins --install mellanox-plugin-2.0-2.0.0-1.noarch.rpm
+        NOTE: Mellanox plugin installation replaces your bootstrap image only in 
+        Fuel 6.1 at this stage.
               The original image is backed up in /opt/old_bootstrap_image/.
 
 4. Check if the plugin was installed successfully:
@@ -64,7 +68,7 @@ To install Mellanox plugin, follow these steps:
         # fuel plugins
         id | name              | version | package_version
         ---|-------------------|---------|----------------
-        1  | mellanox-plugin   | 1.0.0   | 2.0.0
+        1  | mellanox-plugin   | 2.0.0   | 2.0.0
 
 Mellanox plugin configuration
 ----------------------------
@@ -78,10 +82,9 @@ Contributors
 
 David Slama <dudus@mellanox.com> (PM)
 Aviram Bar-Haim <aviramb@mellanox.com> (Release manager)
+Rawan Herzallah <rawanh@mellanox.com> (Developer and Verification engineer)
 Andrey Yevsyukov <andreyy@mellanox.com> (Developer)
-Gil Meir <gmeir11@gmail.com> (Developer)
 Amichay Polishuk <amichayp@mellanox.com> (QA engineer)
 Noam Angel <amichayp@mellanox.com> (QA engineer)
 Lenny Verkhovsky <lennyb@mellanox.com> (Verification engineer)
-Rawan Herzallah <rherzallah@asaltech.com> (Verification engineer)
-Murad Awawdeh <mawawdeh@asaltech.com> (Verification engineer)
+Murad Awawdeh <murada@mellanox.com> (Verification engineer)
