@@ -15,7 +15,7 @@
 # limitations under the License.
 
 source ./common
-ROLES="primary-controller controller compute cinder"
+ROLES="primary-controller controller compute cinder ceph-osd"
 ASTUTE_FILE=/etc/astute.yaml
 
 function check_symlink () {
