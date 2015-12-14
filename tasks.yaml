@@ -46,7 +46,14 @@
   parameters:
     cmd: ./sriov.sh configure
     timeout: 60
-# Rename iSER interface for Eth mode
+# add VXLAN offloading parameters
+- role: '*'
+  stage: pre_deployment
+  type: shell
+  parameters:
+    cmd: ./vxlan_offloading.sh configure
+    timeout: 60
+# if VXLAN is not required. Rename iSER interface for Eth mode
 - role: '*'
   stage: pre_deployment
   type: puppet
