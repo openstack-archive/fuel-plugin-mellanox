@@ -16,7 +16,7 @@ attributes:
         - After the interfaces discovery, perform the following:
         *   Set the relevant networks to work over Mellanox interfaces, in the interfaces configuration in the Nodes tab.
         *   Run network verification, after configuring the desired network subnets and VLAN segmentations.
-        - For more information: https://community.mellanox.com/docs/DOC-2165
+        - For more information: https://community.mellanox.com/docs/DOC-2374
   iser:
     value: false
     label: "iSER protocol for volumes (Cinder)"
@@ -47,3 +47,12 @@ attributes:
     restrictions:
       - condition: "settings:mellanox-plugin.sriov.value == false"
         message: "In order to change the number of virtual NICs, Neutron SR-IOV plugin should be checked."
+  vxlan_offloading:
+    value: "false"
+    label: "VXLAN Offloading"
+    description: "By using Mellanox hardware, VXLAN offloading is achieved with better performance and significant CPU overhead reduction. "
+    weight: 11
+    type: "checkbox"
+    restrictions:
+      - condition: "not (cluster:net_provider == 'neutron' and networking_parameters:segmentation_type == 'tun')"
+        message: "For VXLAN offloading, network should be neutron with tunnling segmentation."
