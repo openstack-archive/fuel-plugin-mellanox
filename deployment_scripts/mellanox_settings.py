@@ -211,6 +211,10 @@ class MellanoxSettings(object):
         return cls.get_mlnx_section()['iser']
 
     @classmethod
+    def is_vxlan_offloading_enabled(cls):
+        return cls.get_mlnx_section()['vxlan_offloading']
+
+    @classmethod
     def update_role_settings(cls):
         # realize the driver in use (eth/ib)
         cls.add_driver()
