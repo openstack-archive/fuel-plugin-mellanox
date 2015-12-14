@@ -1,11 +1,26 @@
 class mellanox_openstack::compute_sriov (
   $physnet,
   $physifc,
+  $pci_passthrough,
+  $firewall_driver,
+  $ml2_extra_mechanism_driver,
 ) {
 
   include nova::params
   $libvirt_service_name = 'libvirtd'
   $libvirt_package_name = $nova::params::libvirt_package_name
+
+  if ( $ml2_extra_mechanism_driver == 'sriovnicswitch' ){
+    # configure pci_passthrough_whitelist nova compute
+    nova_config { 'DEFAULT/pci_passthrough_whitelist':
+        value => check_array_of_hash($pci_passthrough);
+    }
+
+    # update [securitygroup] section in neutron
+    neutron_agent_linuxbridge { 'securitygroup/firewall_driver':
+        value => $firewall_driver
+    }
+  }
 
   class { 'mellanox_openstack::eswitchd' :
       physnet => $physnet,
