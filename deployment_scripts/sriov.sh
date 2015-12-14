@@ -36,7 +36,7 @@ function get_port_type() {
 
 function get_num_probe_vfs () {
   if [ $ISER == true ] && [ $DRIVER == 'mlx4_en' ]; then
-    probe_vfs=1
+    probe_vfs=${USER_NUM_OF_VFS}
   else
     probe_vfs=0
   fi
@@ -77,24 +77,6 @@ function reduce_mac_caching_timeout () {
     timeout=$VF_MAC_CACHING_TIMEOUT_DEF
   fi
   sysctl_conf set 'net.ipv4.route.gc_timeout' "$timeout"
-}
-
-function set_modprobe_file () {
-  PROBE_VFS=`get_num_probe_vfs`
-  MLX4_CORE_FILE="/etc/modprobe.d/mlx4_core.conf"
-  PORT_TYPE=`get_port_type`
-  MLX4_CORE_STR="options mlx4_core
-                 enable_64b_cqe_eqe=0
-                 log_num_mgm_entry_size=-1
-                 port_type_array=${PORT_TYPE},${PORT_TYPE}"
-  TOTAL_VFS=$1
-  if [[ $TOTAL_VFS -gt 0 ]]; then
-    MLX4_CORE_STR="${MLX4_CORE_STR} num_vfs=${TOTAL_VFS}"
-    if [[ $PROBE_VFS -gt 0 ]]; then
-      MLX4_CORE_STR="${MLX4_CORE_STR} probe_vf=${PROBE_VFS}"
-    fi
-  fi
-  echo ${MLX4_CORE_STR} > ${MLX4_CORE_FILE}
 }
 
 function set_kernel_params () {
@@ -164,7 +146,10 @@ function configure_sriov () {
     fi
     logger_print info "Configuring ${total_vfs} virtual functions
                        (only even number is currently supported)"
-    set_modprobe_file $total_vfs &&
+
+    probe_vfs=`get_num_probe_vfs`
+    port_type=`get_port_type`
+    ./set_modprobe_file.sh $total_vfs $probe_vfs $port_type &&
     set_kernel_params &&
     burn_vfs_in_fw $total_vfs
     return $?
@@ -203,7 +188,9 @@ function validate_sriov () {
 
   # fallback only if kernel param exists and amount of vfs is not as expcted
   logger_print error "Failed , trying to fallback to ${FALLBACK_NUM_VFS}"
-  set_modprobe_file $FALLBACK_NUM_VFS
+  probe_vfs=`get_num_probe_vfs`
+  port_type=`get_port_type`
+  ./set_modprobe_file.sh $FALLBACK_NUM_VFS $probe_vfs $port_type
   service openibd restart &> /dev/null
   current_num_vfs=`lspci | grep -i mellanox | grep -i virtual | wc -l`
   if [ $current_num_vfs -eq $FALLBACK_NUM_VFS ]; then
