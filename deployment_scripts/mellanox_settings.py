@@ -198,7 +198,7 @@ class MellanoxSettings(object):
         mlnx_interfaces = cls.mlnx_interfaces_section
         drivers = list()
         for network_type, ifc_dict in mlnx_interfaces.iteritems():
-             if ( ifc_dict['driver'] in MLNX_DRIVERS_LIST):
+            if ifc_dict['driver'] in MLNX_DRIVERS_LIST:
                   drivers.append(ifc_dict['driver'])
         return list(set(drivers))
 
@@ -209,6 +209,10 @@ class MellanoxSettings(object):
     @classmethod
     def is_iser_enabled(cls):
         return cls.get_mlnx_section()['iser']
+
+    @classmethod
+    def is_vxlan_offloading_enabled(cls):
+        return cls.get_mlnx_section()['vxlan_offloading']
 
     @classmethod
     def update_role_settings(cls):
@@ -295,7 +299,7 @@ class MellanoxSettings(object):
                                 network_type = 'admin'
                   elif transformation['bridge'] == 'br-ex':
                                 network_type = 'public'
-                  elif transformation['bridge'] == 'br-aux':
+                  elif transformation['bridge'] == 'br-aux' or transformation['bridge'] == 'br-mesh':
                                 network_type = 'private'
                   elif transformation['bridge'] == 'br-mgmt':
                                 network_type = 'management'
