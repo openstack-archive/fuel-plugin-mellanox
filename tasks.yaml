@@ -38,6 +38,13 @@
   parameters:
     cmd: ./install_ofed.sh
     timeout: 3600
+# add VXLAN offloading parameters
+- role: '*'
+  stage: pre_deployment
+  type: shell
+  parameters:
+    cmd: ./vxlan_offloading.sh configure
+    timeout: 60
 # Configure number of VFs according to the user decision:
 # change modprobe file + IOMMU in grub file + change VFs num in FW
 - role: '*'
@@ -46,7 +53,7 @@
   parameters:
     cmd: ./sriov.sh configure
     timeout: 60
-# Rename iSER interface for Eth mode
+# if VXLAN is not required. Rename iSER interface for Eth mode
 - role: '*'
   stage: pre_deployment
   type: puppet
