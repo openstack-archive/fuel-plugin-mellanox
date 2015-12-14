@@ -80,3 +80,4 @@ readonly USER_NUM_OF_VFS=`get_mlnx_param num_of_vfs`
 readonly ISER=`get_mlnx_param iser`
 readonly MAX_VFS=64
 readonly MIN_VFS=1
+readonly VXLAN_OFFLOADING=`get_mlnx_param vxlan_offloading`
