@@ -5,13 +5,13 @@ name: mellanox-plugin
 title: Mellanox Openstack features
 
 # Plugin version
-version: 2.0.0
+version: 2.0.10
 
 # Description
 description: Enable features over Mellanox hardware
 
 # Required fuel version
-fuel_version: ['6.1', '7.0']
+fuel_version: ['6.1', '7.0', '8.0']
 
 # Specify license of your plugin
 licenses: ['Apache License Version 2.0']
