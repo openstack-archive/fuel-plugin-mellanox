@@ -111,7 +111,7 @@ class MellanoxSettings(object):
                     "Failed reading vlan for br-storage"
                 )
             if mlnx['driver'] == 'eth_ipoib':
-                pkey = format((vlan ^ 0x8000),'04x')
+                pkey = format((int(vlan) ^ 0x8000),'04x')
                 mlnx['storage_pkey'] = pkey
 
     @classmethod
