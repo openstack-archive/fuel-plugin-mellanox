@@ -166,20 +166,34 @@ class MellanoxSettings(object):
             endpoints[vlan_name] = (
                 endpoints.pop('br-storage', {})
             )
-            for role,bridge in cls.data['network_scheme']['roles'].iteritems():
-                if bridge == 'br-storage':
-                    cls.data['network_scheme']['roles'][role] = vlan_name
 
-                else:
-                    # Set storage rule to iSER port
-                    cls.data['network_scheme']['roles']['storage'] = \
-                        mlnx['iser_ifc_name']
+        else:
+            vlan_name = mlnx['iser_ifc_name']
 
-                    # Set iSER endpoint with br-storage parameters
-                    endpoints[mlnx['iser_ifc_name']] = (
-                        endpoints.pop('br-storage', {})
-                    )
-                    interfaces[mlnx['iser_ifc_name']] = {}
+            # Commented until fixing bug LP #1450420
+            # Meanwhile using a workaround of configuring ib0
+            # and changing to its child in post deployment
+            #if storage_vlan: # IB child
+            #    vlan_name = mlnx['iser_ifc_name'] = \
+            #        "{0}.{1}".format(mlnx['iser_ifc_name'],
+            #        mlnx['storage_pkey'])
+
+            # Set storage rule to iSER port
+            cls.data['network_scheme']['roles']['storage'] = \
+                mlnx['iser_ifc_name']
+
+            # Set iSER endpoint with br-storage parameters
+            endpoints[mlnx['iser_ifc_name']] = (
+                endpoints.pop('br-storage', {})
+            )
+            interfaces[mlnx['iser_ifc_name']] = {}
+
+        # Set role
+        for role,bridge in cls.data['network_scheme']['roles'].iteritems():
+            if bridge == 'br-storage':
+                cls.data['network_scheme']['roles'][role] = vlan_name
+
+        # Clean
         if storage_vlan: \
             storage_parent = "{0}.{1}".format(storage_parent, storage_vlan)
         transformations.remove({
@@ -329,12 +343,6 @@ def main():
         error_msg = "Failed adding Mellanox settings: {0}\n".format(exc)
         sys.stderr.write(error_msg)
         logging.error(exc)
-        sys.exit(1)
-    except Exception, exc:
-        error_msg = "An unknown error has occured while adding " \
-                         "Mellanox settings: {0}\n".format(exc)
-        sys.stderr.write(error_msg)
-        logging.exception(exc)
         sys.exit(1)
     success_msg = "Done adding Mellanox settings\n"
     sys.stdout.write(success_msg)
