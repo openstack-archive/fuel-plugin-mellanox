@@ -30,15 +30,16 @@ from optparse import OptionParser
 import libxml2
 import signal
 
-VERSION = "2.3-2.0.8"
+VERSION = "3.2-0.0.1"
 
 # Global parameters
 logger = None
 SCRIPT = os.path.basename(sys.argv[0])
 DESC = "Run daemon for Child nics managment."
-XEN_MANAGMENT = "/usr/bin/xenstore"
-VIRSH_MANAGMENT = "/usr/bin/virsh"
-OVS_MANAGMENT = "/etc/init.d/openvswitch"
+XEN_MANAGEMENT = "/usr/bin/xenstore"
+VIRSH_MANAGEMENT = "/usr/bin/virsh"
+OVS_MANAGEMENT = "/etc/init.d/openvswitch"
+OVS_MANAGEMENT_UBUNTU = "/etc/init.d/openvswitch-switch"
 FORMAT = '%(asctime)s :[%(name)s] %(levelname)s: %(message)s'
 
 NONE_ENV= 0
@@ -130,6 +131,7 @@ def get_mac_by_name(name, namespace = None):
 	sub_cmd = ""
 	if namespace:
 		sub_cmd = "/sbin/ip netns exec %s" %namespace
+        logger.debug("checking namespace %s" % namespace)
 
 	cmd = "%s /sbin/ip link show %s 2> /dev/null | grep -o -E '([[:xdigit:]]{1,2}:){5}[[:xdigit:]]{1,2} | /usr/bin/head -1'" % (sub_cmd, name)
 	(rc, out) = commands.getstatusoutput(cmd)
@@ -475,16 +477,16 @@ class NicObserver(Observer):
 		self.name = "nic"
 		#on every port over the bridges one vlan per mac
 		self.map_mac_2_vlan = {}
-		# keeps the ports that already scaned in that loop
-		self.scaned_port = []
+		# keeps the ports that already scanned in that loop
+		self.scanned_port = []
 		self.all_bridges = []
 		self.first_ovs_br = None
 		self.known_vlan_macs = {}
 
-	def add_to_scaned_list(self, nic):
-		#self.scaned_port = self.scaned_port.append(nic)
-		if nic not in self.scaned_port:
-			self.scaned_port.append(nic)
+	def add_to_scanned_list(self, nic):
+		#self.scanned_port = self.scanned_port.append(nic)
+		if nic not in self.scanned_port:
+			self.scanned_port.append(nic)
 
 	#get interface ibx.y and return the index after the dot
 	def get_index (self, interface):
@@ -600,17 +602,41 @@ class VirtualNicObserver(NicObserver):
 				return br
 		return None
 
+#####################################################################
+	# Make sure that both of the peers are connected.
+	# each of them should point on the other side as has the other's if_index
+	def verify_peer_belongs_to_peer(self, first_side_ifindex, second_side_name, namespace = None):
+		pref = ""
+		if None != namespace:
+			pref = "ip netns exec %s" %namespace
+		cmd = "%s ethtool  -S  %s 2> /dev/null |grep peer_ifindex |awk -F': ' '{print $2}'" % (pref, second_side_name)
+		(rc, out) = commands.getstatusoutput(cmd)
+		if rc or len(out) == 0:
+			self.logger.debug("1. No match between peer_idx %s, and interface:%s (cmd:%s)" % (first_side_ifindex, second_side_name, cmd))
+			return False
+		if out.strip() == first_side_ifindex:
+			self.logger.debug("Match between peer_idx %s, and interface:%s" % (first_side_ifindex, second_side_name))
+			return True
+		self.logger.debug("2. No match between peer_idx %s, and interface:%s out: %s (cmd: %s)" % (first_side_ifindex, second_side_name, out, cmd))
+		return False
 
 #####################################################################################
 	# some OS's/Topologies keep the peer interface in different namespaces
 	# The function searches all the namespaces in order to see where it is located.
-	def find_peer_by_idx(self, peer_if_idx):
+	def find_peer_by_idx(self, peer_if_idx, origin_peer):
 		peer = None
 		all_ns = None
+		# find the orignal nic index
+		cmd = "ip -o link show |egrep %s: | awk -F': ' '{print $1}'" % origin_peer
+		(rc, out) = commands.getstatusoutput(cmd)
+		if rc or len(out) == 0:
+			self.logger.debug("Failed to get peer index.origin: %s peer_idx %s, cmd: %s" % (peer_if_idx, origin_peer, cmd))
+			return (peer, None)
+		origin_peer_idx = out.strip()
 
 		cmd = "ip -o link show |egrep ^%s: | awk -F': ' '{print $2}'" % peer_if_idx
 		(rc, out) = commands.getstatusoutput(cmd)
-		if rc or len(out) == 0:
+		if rc or len(out) == 0 or (False == self.verify_peer_belongs_to_peer(origin_peer_idx, out.strip())):
 			self.logger.debug("Failed to get peer from global namespace peer_idx %s, cmd: %s" % (peer_if_idx, cmd))
 			#try searching in all other namespaces:
 			cmd = "ip netns list"
@@ -621,7 +647,7 @@ class VirtualNicObserver(NicObserver):
 				for ns in all_ns:
 					cmd = "ip netns exec %s ip link list |egrep ^%s: | awk -F': ' '{print $2}' " % (ns, peer_if_idx)
 					(rc, out) = commands.getstatusoutput(cmd)
-					if rc or len(out) == 0:
+					if rc or len(out) == 0 or (False == self.verify_peer_belongs_to_peer(origin_peer_idx, out.strip(), ns)):
 						self.logger.debug("No peer in namespace %s for peer_idx %s\n" % (ns, peer_if_idx))
 						continue
 					peer = out.strip()
@@ -646,10 +672,11 @@ class VirtualNicObserver(NicObserver):
 		if rc or len(out) == 0:
 			self.logger.debug("cmd:%s. No peer for nic: %s" % (cmd, nic))
 			return []
-
 		peer_if_idx = out.strip()
+                self.logger.debug("cmd:%s. found peer for nic: %s!! peer: peer_if_idx" % (cmd, nic))
+
 		#get the peer name
-		(peer, ns) = self.find_peer_by_idx(peer_if_idx)
+		(peer, ns) = self.find_peer_by_idx(peer_if_idx, nic)
 		if None == peer:
 			self.logger.warning("Failed to get peer for nic: %s peer_idx %s, cmd: %s" % (nic, peer_if_idx, cmd))
 			return []
@@ -686,11 +713,11 @@ class VirtualNicObserver(NicObserver):
 		nics = self.get_br_nics(br)
 		domains = self.get_domains()
 		self.logger.debug("%s nics list %s" % (br, str(nics)))
-		self.add_to_scaned_list(nic)
+		self.add_to_scanned_list(nic)
 		for n in nics:
 
-			if (n in self.scaned_port):
-				self.logger.debug("No need to check peer for n: %s Parent %s and scaned_port: %s forced_vlan: %s" % (n, nic, str(self.scaned_port), str(forced_vlan)))
+			if (n in self.scanned_port):
+				self.logger.debug("No need to check peer for n: %s Parent %s and scanned_port: %s forced_vlan: %s" % (n, nic, str(self.scanned_port), str(forced_vlan)))
 				continue
 
 			# if slave is not vif it will return its mac
@@ -699,21 +726,21 @@ class VirtualNicObserver(NicObserver):
 				macs.append(mac)
 				self.logger.debug("Guest %s mac %s" % (n, str(mac)))
 			nic_br = self.get_br_by_nic(n)
-			self.add_to_scaned_list(nic_br)
+			self.add_to_scanned_list(nic_br)
 
 			vlan = self.get_vlan_by_br_and_nic(nic_br, n)
 			#if vlan == None:
 				#vlan = forced_vlan
 
 			if mac != None and (not self.map_mac_2_vlan.has_key(mac)):
-				self.logger.debug("get_nic_vif_macs mac: %s for n %s  EXISTS nic: %s scaned_port: %s \n self.map_mac_2_vlan %s forced_vlan %s" % (mac, n, nic, str(self.scaned_port), str(self.map_mac_2_vlan), str(forced_vlan)))
+				self.logger.debug("get_nic_vif_macs mac: %s for n %s  EXISTS nic: %s scanned_port: %s \n self.map_mac_2_vlan %s forced_vlan %s" % (mac, n, nic, str(self.scanned_port), str(self.map_mac_2_vlan), str(forced_vlan)))
 				self.map_mac_2_vlan[mac] = vlan
 
 			#if the nic that connected to the bridge is peer than we need also the peer mac address
 			# only not over the parent interface:
-			self.logger.debug("get_nic_vif_macs n: %s nic %s scaned_port: %s \n self.map_mac_2_vlan %s forced_vlan %s" % (n, nic, str(self.scaned_port), str(self.map_mac_2_vlan), str(forced_vlan)))
-			if (n == nic or (n in self.scaned_port)):
-				self.logger.debug("No need to check peer for n: %s Parent %s and scaned_port: %s" % (n, nic, str(self.scaned_port)))
+			self.logger.debug("get_nic_vif_macs n: %s nic %s scanned_port: %s \n self.map_mac_2_vlan %s forced_vlan %s" % (n, nic, str(self.scanned_port), str(self.map_mac_2_vlan), str(forced_vlan)))
+			if (n == nic or (n in self.scanned_port)):
+				self.logger.debug("No need to check peer for n: %s Parent %s and scanned_port: %s" % (n, nic, str(self.scanned_port)))
 				continue
 			peer_macs = self.get_peer_macs(n, forced_vlan)
 			if len(peer_macs) != 0:
@@ -736,7 +763,7 @@ class VirtualNicObserver(NicObserver):
 					self.first_ovs_br = br
 					ovs_br.first_ovs_br = self.first_ovs_br
 					self.logger.debug("Found OVS br %s for port %s." % (br, n))
-                                ovs_br.scaned_port = self.scaned_port
+                                ovs_br.scanned_port = self.scanned_port
 				macs_ovsbr = list(set(ovs_br.get_nic_vif_macs(n, None)))
                                 if macs_ovsbr:
 					self.logger.debug("Found macs in OVS over LB port %s: %s" % (n, macs_ovsbr))
@@ -783,7 +810,7 @@ class VirtualNicObserver(NicObserver):
                                                         self.known_vlan_macs[vlan_id] = list(set(self.known_vlan_macs[vlan_id]) - set([mac_to_remove]))
 					self.logger.debug("Connected interface %s to ovs-br %s macs2vlan: %s." % (n, br, str(self.map_mac_2_vlan)))
 
-			self.add_to_scaned_list(n)
+			self.add_to_scanned_list(n)
 
 		return macs
 
@@ -822,6 +849,28 @@ class VirtualNicObserver(NicObserver):
 			i = i + 1
 		return slave
 
+	def set_slave_mode (self, slave, new_mode):
+		rc = 0
+		cmd = "ifconfig %s down" % slave
+		(rc, out) = commands.getstatusoutput(cmd)
+		if rc:
+			self.logger.warning("cmd failed! (%s)" % cmd)
+			return rc
+
+		cmd = "/bin/echo %s > %s" % (new_mode, "/sys/class/net/" + slave + os.sep + "mode")
+
+		(rc, out) = commands.getstatusoutput(cmd)
+		if rc:
+			self.logger.warning("cmd failed! (%s)" % cmd)
+			return rc
+
+		cmd = "ifconfig %s up" % slave
+		(rc, out) = commands.getstatusoutput(cmd)
+		if rc:
+			self.logger.warning("cmd failed! (%s)" % cmd)
+			return rc
+		return rc
+
 	# create vif if remove flag is clear
 	def create_vif (self, parent, slave, mac, vlan_id = ""):
 		rc = 0
@@ -856,6 +905,7 @@ class VirtualNicObserver(NicObserver):
 				self.logger.warning("Failed to create child, index: (%s)" % slave_index)
 				return rc
 			self.logger.info("Clone nic %s was created" % slave)
+		rc = self.set_slave_mode(slave, "connected")
 		rc = rc or self.create_vif(parent, slave, mac)
 		return rc
 
@@ -926,8 +976,8 @@ class VirtualNicObserver(NicObserver):
 #############################################################################
 	def update (self):
 		self.logger.debug("Updating virtual nic (parent=%s)" % self.parent.name)
-		# no ports in the already scaned list:
-		self.scaned_port = []
+		# no ports in the already scanned list:
+		self.scanned_port = []
 		vif_macs = [self.parent.mac] + self.get_nic_vif_macs(self.parent.name) #the macs of all the virtual interfaces connected to the bridge
 		slaves_macs = self.parent.get_parent_slave_macs() # the macs of all parent slaves
 		# make sure no duplicate macs here.
@@ -1040,7 +1090,7 @@ class VirtualVlanObserver(VirtualNicObserver):
 		current_vlans = self.get_vlan_interfaces_per_parent(self.parent.name)
 		self.logger.debug("%s has vlans: %s" % (self.parent.name, current_vlans))
 		all_vlans = list(set(self.known_vlans + current_vlans))
-		self.scaned_port = []
+		self.scanned_port = []
 		# run over all the vlans, add slave per node:
 		for vlan in all_vlans:
 			self.logger.debug("taking care at vlan: %s" % vlan)
@@ -1333,7 +1383,7 @@ class KVMOvsNicObserver(VirtualNicObserver, KVMDomain):
 	def update (self):
 		self.logger.debug("Updating parent=%s" % self.parent.name)
 		self.map_mac_2_vlan = {}
-		self.scaned_port = []
+		self.scanned_port = []
 
 		# update the name of the ovs that this parent attaches to it:
 		self.ovs_name = self.get_br_by_nic(self.parent.name)
@@ -1404,7 +1454,7 @@ class KVMOvsNicObserver(VirtualNicObserver, KVMDomain):
 
 		peer_if_idx = out.strip()
 		#get the peer name
-		(peer, ns) = self.find_peer_by_idx(peer_if_idx)
+		(peer, ns) = self.find_peer_by_idx(peer_if_idx, nic)
 		if None == peer:
 			self.logger.warning("Failed to get peer for nic: %s peer_idx %s, cmd: %s" % (nic, peer_if_idx, cmd))
 			return []
@@ -1466,9 +1516,9 @@ class KVMOvsNicObserver(VirtualNicObserver, KVMDomain):
 			if None != mac:
 				self.map_mac_2_vlan[mac] = vlan
 
-		if m[0] in self.scaned_port:
+		if m[0] in self.scanned_port:
 			return []
-		self.add_to_scaned_list(m[0])
+		self.add_to_scanned_list(m[0])
 		macs = self.get_nic_vif_macs(m[0], vlan)
 		if macs != None:
 			if mac != None:
@@ -1647,24 +1697,24 @@ class DaemonRunner:
 	def get_environment (self):
 		# If xenstore is avaiable, use it
 		# (OVS/XS do not have libvirt, but has xenstore)
-		if os.path.exists(XEN_MANAGMENT):
+		if os.path.exists(XEN_MANAGEMENT):
 			self.supported_observers = ["bond","vlan","nic"]
 			logger.debug("Running on XEN environment")
                         self.env_type = XEN_ENV
 			return XenEnvironment()
 		# if not (e.g. KVM) then we require virsh (via libvirt)
-		if os.path.exists(VIRSH_MANAGMENT) or os.path.exists(OVS_MANAGMENT):
+		if os.path.exists(VIRSH_MANAGEMENT) or os.path.exists(OVS_MANAGEMENT) or os.path.exists(OVS_MANAGEMENT_UBUNTU):
 			#self.supported_observers = ["bond","vlan","nic","ovs-nic","ovs-vlan","ovs-bond"]
 			self.supported_observers = ["bond","vlan","nic","ovs-nic"]
 			self.logger.debug("Running on KVM environment")
-                        if os.path.exists(VIRSH_MANAGMENT):
+                        if os.path.exists(VIRSH_MANAGEMENT):
                                 self.env_type = KVM_ENV
                         # overwrite kvm with ovs
-                        if os.path.exists(OVS_MANAGMENT):
+                        else:
                                 self.logger.debug("Running on OVS environment")
                                 self.env_type = OVS_ENV
 			return KVMEnvironment()
-		self.logger.debug("NO MANAGMENT: this is a native server")
+		self.logger.debug("NO MANAGEMENT: this is a native server")
 		self.supported_observers = ["bond","vlan","nic"]
 		self.logger.debug("Running on Native environment")
                 self.env_type = NONE_ENV
