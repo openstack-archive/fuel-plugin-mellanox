@@ -15,7 +15,7 @@
 # limitations under the License.
 
 readonly PLUGIN_DIR="$(dirname $0)"
-readonly PLUGIN_VERSION=`cat $PLUGIN_DIR/.version`
+readonly PLUGIN_VERSION=`cat ${PLUGIN_DIR}/.version`
 readonly REPOSITORY_PATH='bgate.mellanox.com/openstack/mellanox_fuel_plugin/'
 
 function download {
@@ -38,7 +38,8 @@ function download {
       echo "Can't download ${FILE_NAME}. File of type ${FILE_TYPE} is not supported."
       exit 1
   esac
-  URL="http://${REPOSITORY_PATH}/${PREFIX_URL}/${FILE_NAME}"
+  URL_path="http://${REPOSITORY_PATH}/${PREFIX_URL}/${FILE_NAME}"
+  URL=$(readlink -f $URL_path) || URL=$URL_path
   DEST_DIR="${PLUGIN_DIR}/${BUILD_DIR}"
   wget ${URL} -P ${DEST_DIR}
   if [ $? -ne 0 ]; then
@@ -77,8 +78,5 @@ deb_files="cirros-testvm-mellanox_0.3.2-ubuntu3_amd64.deb
 get_packages "deb" "$old_debs" "$deb_files"
 
 bootstrap_dir="${PLUGIN_DIR}/bootstrap/"
-bootstrap_files="initramfs.img
-                 linux
-                 ofed
-                 kernel"
-#get_packages "bootstrap" "$bootstrap_dir" "$bootstrap_files" # Using original bootstrap in 7.0
+bootstrap_files="latest-build"
+get_packages "bootstrap" "$bootstrap_dir" "$bootstrap_files"
