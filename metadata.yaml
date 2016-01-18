@@ -5,7 +5,11 @@ name: mellanox-plugin
 title: Mellanox Openstack features
 
 # Plugin version
+<<<<<<< HEAD
 version: 2.0.12
+=======
+version: 2.0.11
+>>>>>>> f1054db... Add bootstrap initrd update to support IB VPI discovery
 
 # Description
 description: Enable features over Mellanox hardware
