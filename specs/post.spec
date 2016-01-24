@@ -1,6 +1,4 @@
 
-#%%post
-
 FUEL_BOOTSTRAP_DIR="/var/www/nailgun/bootstrap/"
 PLUGINS_DIR="/var/www/nailgun/plugins/"
 BOOTSTRAP_BACKUP_DIR="/opt/old_bootstrap_initrd/"
