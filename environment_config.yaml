@@ -1,22 +1,29 @@
 attributes:
-  prerequisites:
-    weight: 5
-    type: "hidden"
-    value: true
+  metadata:
+    group: 'other'
+  notes:
+    type: "textarea"
     label: "Important notes:"
-    description: |
-      To use Mellanox High Performance features, you have to complete the following prerequisites prior to the deployment:
-        - For Ethernet deployment:
-        *   Configure the Switch ports to Ethernet mode.
-        *   Configure the desired VLANs for each port.
-        - For InfiniBand deployment:
-        *   Configure the Switch ports to InfiniBand mode.
-        *   Configure a Subnet Manager (SM) on the switch or on a node in the cluster, as described in the User manual.
-        *   Reboot bootstrap nodes using the "reboot_bootstrap_nodes" script, from the Fuel master, in order to load eIPoIB hardware discovery support.
-        - After the interfaces discovery, perform the following:
-        *   Set the relevant networks to work over Mellanox interfaces, in the interfaces configuration in the Nodes tab.
-        *   Run network verification, after configuring the desired network subnets and VLAN segmentations.
-        - For more information: https://community.mellanox.com/docs/DOC-2374
+    weight: 5
+    extra_priority: null
+    value: |
+      To use Mellanox High Performance features,
+      you have to complete the following prerequisites prior to the deployment:
+      - For Ethernet deployment:
+           *   Configure the Switch ports to Ethernet mode.
+           *   Configure the desired VLANs for each port.
+      - For InfiniBand deployment:
+           *   Configure the Switch ports to InfiniBand mode.
+           *   Configure a Subnet Manager (SM) on the switch or on a node in the cluster,
+                as described in the User manual.
+           *   Reboot bootstrap nodes using the 'reboot_bootstrap_nodes' script, from
+                the Fuel master, in order to load eIPoIB hardware discovery support.
+      - After the interfaces discovery, perform the following:
+           *   Set the relevant networks to work over Mellanox interfaces, in the
+                interfaces configuration in the Nodes tab.
+           *   Run network verification, after configuring the desired network subnets
+                and VLAN segmentations.
+    description: "For more information: https://community.mellanox.com/docs/DOC-2374"
   iser:
     value: false
     label: "iSER protocol for volumes (Cinder)"
@@ -28,10 +35,10 @@ attributes:
         message: "For iSER support in Cinder, Cinder LVM over iSCSI should be enabled and hypervisor type should be KVM."
   sriov:
     value: false
-    label: "Neutron SR-IOV plugin"
+    label: "Neutron SR-IOV Mechanism driver"
     weight: 60
     type: "checkbox"
-    description: "If selected, Mellanox network acceleration (Neutron) plugin will be installed, to enable SR-IOV capabilities."
+    description: "If selected, Neutron SRIOV mechanism driver will be configured, to enable SR-IOV capabilities."
     restrictions:
       - condition: "settings:common.libvirt_type.value != 'kvm' or not (cluster:net_provider == 'neutron' and networking_parameters:segmentation_type == 'vlan')"
         message: "For Mellanox SR-IOV support in neutron, hypervisor type should be KVM and the environment networking should be based on Neutron with VLAN segmentation."

@@ -1,5 +1,6 @@
 # Log a notice about pre_deployment start
-- role: '*'
+- id: init_mlnx_logs
+  role: '*'
   stage: pre_deployment
   type: shell
   parameters:
@@ -9,7 +10,8 @@
 # there is no symbolic link from astute.yaml to <role>.yaml.
 # Since the data that the plugin uses is common to all <role>.yaml files,
 # this script links astute.yaml to any <role>.yaml on each node.
-- role: '*'
+- id: link_astute_file
+  role: '*'
   stage: pre_deployment
   type: shell
   parameters:
@@ -17,14 +19,16 @@
     timeout: 5
 # Add relevant settings for Mellanox manifests to mellanox plugin section in
 # Hiera, to make the data easily accessible and independent of astute.yaml
-- role: '*'
+- id: customize_mellanox_hiera
+  role: '*'
   stage: pre_deployment
   type: shell
   parameters:
     cmd: ./mellanox_settings.py
     timeout: 10
 # Verify kernel-devel packages are installed (if CentOS)
-- role: '*'
+- id: validate_kernel_devel
+  role: '*'
   stage: pre_deployment
   type: puppet
   parameters:
@@ -32,14 +36,16 @@
     puppet_modules: puppet/modules:/etc/puppet/modules
     timeout: 200
 # Install OFED + FW upgrade
-- role: '*'
+- id: install_mlnx_ofed
+  role: '*'
   stage: pre_deployment
   type: shell
   parameters:
     cmd: ./install_ofed.sh
     timeout: 3600
 # add VXLAN offloading parameters
-- role: '*'
+- id: configure_vxlan_offload
+  role: '*'
   stage: pre_deployment
   type: shell
   parameters:
@@ -47,14 +53,16 @@
     timeout: 60
 # Configure number of VFs according to the user decision:
 # change modprobe file + IOMMU in grub file + change VFs num in FW
-- role: '*'
+- id: configure_sriov
+  role: '*'
   stage: pre_deployment
   type: shell
   parameters:
     cmd: ./sriov.sh configure
     timeout: 60
 # if VXLAN is not required. Rename iSER interface for Eth mode
-- role: '*'
+- id: rename_iser_probe_vf
+  role: '*'
   stage: pre_deployment
   type: puppet
   parameters:
@@ -62,48 +70,55 @@
     puppet_modules: puppet/modules:/etc/puppet/modules
     timeout: 60
 # Reboot due to OFED installation / IOMMU configuration
-- role: '*'
+- id: reboot_after_ofed
+  role: '*'
   stage: pre_deployment
   type: reboot
   parameters:
     timeout: 420
 # change modprobe file + IOMMU in grub file + change VFs num in FW
-- role: '*'
+- id: validate_sriov
+  role: '*'
   stage: pre_deployment
   type: shell
   parameters:
     cmd: ./sriov.sh validate
     timeout: 60
 # This is a workaround: disable wrong rules in CentOS IBP #1458832.
-- role: '*'
+- id: remove_blocking_iptable_roles
+  role: '*'
   stage: pre_deployment
   type: shell
   parameters:
     cmd: ./blocking_iptables_rules.sh
     timeout: 20
 # Log a notice about post_deployment start
-- role: '*'
+- id: print_stage_post_deployment
+  role: '*'
   stage: post_deployment
   type: shell
   parameters:
     cmd: ./log_stage.sh post_deployment
     timeout: 5
 # Execute post_deployment manifest for each role
-- role: ['controller', 'primary-controller']
+- id: configure_mellanox_controller
+  role: ['controller', 'primary-controller']
   stage: post_deployment
   type: puppet
   parameters:
     puppet_manifest: puppet/manifests/controller.pp
     puppet_modules: puppet/modules:/etc/puppet/modules
     timeout: 360
-- role: ['compute']
+- id: configure_mellanox_compute
+  role: ['compute']
   stage: post_deployment
   type: puppet
   parameters:
     puppet_manifest: puppet/manifests/compute.pp
     puppet_modules: puppet/modules:/etc/puppet/modules
     timeout: 360
-- role: ['cinder']
+- id: configure_mellanox_cinder
+  role: ['cinder']
   stage: post_deployment
   type: puppet
   parameters:
@@ -112,7 +127,8 @@
     timeout: 360
 # Set storage network configurations on the IB child
 # if exists
-- role: '*'
+- id: configure_mlnx_iser_ib
+  role: '*'
   stage: post_deployment
   type: puppet
   parameters:
@@ -121,16 +137,19 @@
     timeout: 120
 # Move Ubuntu iSER conigurations to /etc/network/interfaces
 # For MLNX_OFED drivers
-- role: '*'
+- id: move_ib_interfaces_to_persistent
+  role: '*'
   stage: post_deployment
   type: shell
   parameters:
     cmd: ./move_ubuntu_ib_interfaces_conf.sh
     timeout: 60
 # Override the testvm with Mellanox Cirros TestVM
-- role: ['primary-controller']
+- id: replace_cirros_sriov
+  role: ['primary-controller']
   stage: post_deployment
   type: shell
   parameters:
-    cmd: ./replace_cirros.sh
+    cmd: source /root/openrc; ./replace_cirros.sh
     timeout: 180
+    retries: 10

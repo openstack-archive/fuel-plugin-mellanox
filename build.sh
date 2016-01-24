@@ -21,12 +21,13 @@ function fail_on_error() {
 }
 
 # Verify distrobution
-( [ -f /etc/redhat-release ] && grep -q "release 6" /etc/redhat-release ) ||
-fail_on_error "Mellanox plugin build script supports only Redhat/CentOS 6"
+( [ -f /etc/redhat-release ] ) ||
+fail_on_error "Mellanox plugin build script supports only Redhat/CentOS"
 
 readonly TOP_DIR=`dirname $0`
 readonly TMP_DIR='/tmp'
 readonly PLUGIN_BUILDER_DIR="$TMP_DIR/fuel-plugins/"
+readonly FUEL_PLUGIN_VERSION=`cat metadata.yaml | grep package_version | awk '{print $2}' | head -c 2 | tail -c 1`
 readonly PLUGIN_BUILDER_PACKAGE_DIR="$PLUGIN_BUILDER_DIR/dist"
 pushd $TOP_DIR > /dev/null
 
@@ -51,7 +52,8 @@ git clone https://github.com/stackforge/fuel-plugins.git $TMP_DIR/fuel-plugins |
 fail_on_error "Failed cloning fuel-plugin-builder git repository"
 
 # Append bootstrap post install to the spec
-cat specs/post.spec >> $PLUGIN_BUILDER_DIR/fuel_plugin_builder/templates/v2/build/plugin_rpm.spec.mako
+plugin_template=$PLUGIN_BUILDER_DIR/fuel_plugin_builder/templates/v$FUEL_PLUGIN_VERSION
+sed -i '/%post/r specs/post.spec' $plugin_template/build/plugin_rpm.spec.mako
 
 # Install plugin builder
 pushd $PLUGIN_BUILDER_DIR > /dev/null
