@@ -1,5 +1,3 @@
-
-%%post
 if [ -d "/var/www/nailgun/bootstrap/" ]; then
   if [ ! -d "/opt/old_bootstrap_image/" ]; then
     mkdir -p /opt/old_bootstrap_image/
