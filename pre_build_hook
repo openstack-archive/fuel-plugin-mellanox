@@ -74,6 +74,8 @@ deb_files="cirros-testvm-mellanox_0.3.2-ubuntu3_amd64.deb
            eswitchd_1.14-3_amd64.deb
            mlnx-dnsmasq_2015.1.0-1_all.deb
            mlnx-ofed-fuel_3.1-1.5.7_amd64.deb
+           mlnx-ofed-kernel-dkms_3.1-OFED.3.1.1.0.3.1.g9032737_all.deb
+           mlnx-ofed-kernel-utils_3.1-OFED.3.1.1.0.3.1.g9032737_amd64.deb
            python-networking-mlnx_2015.1.2-1_amd64.deb"
 get_packages "deb" "$old_debs" "$deb_files"
 
