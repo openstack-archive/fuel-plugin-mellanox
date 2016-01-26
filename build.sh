@@ -29,6 +29,10 @@ readonly TMP_DIR='/tmp'
 readonly PLUGIN_BUILDER_DIR="$TMP_DIR/fuel-plugins/"
 readonly FUEL_PLUGIN_VERSION=`cat metadata.yaml | grep package_version | awk '{print $2}' | head -c 2 | tail -c 1`
 readonly PLUGIN_BUILDER_PACKAGE_DIR="$PLUGIN_BUILDER_DIR/dist"
+readonly FUEL_VERSION=`cat /etc/fuel/version.yaml | grep release | awk '{print $2}' | tr -d '"'`
+
+# Create .version file
+echo $FUEL_VERSION > .version
 pushd $TOP_DIR > /dev/null
 
 # Clean if needed
@@ -39,6 +43,8 @@ if [ -d ".build" ]; then
   rm -rf .build
 fi
 
+# Check FPB version
+yum install -y python-pip
 pip freeze | grep -q fuel-plugin-builder &&
 ( pip uninstall fuel-plugin-builder -y || fail_on_error "Failed uninstalling fuel-plugin-builder" )
 rm -rf *.rpm
@@ -63,6 +69,9 @@ pip install $(ls -d $PLUGIN_BUILDER_PACKAGE_DIR/*) || fail_on_error "Failed inst
 popd > /dev/null
 
 # Create Mellanox Plugin
-fuel-plugin-builder --build . || fail_on_error "Building mellanox plugin failed"
+fuel-plugin-builder --debug --build . || fail_on_error "Building mellanox plugin failed"
+
+# Change permissions of the plugin
+sudo chmod 755 mellanox-plugin*
 
 popd > /dev/null
