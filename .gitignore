@@ -1,5 +1,5 @@
 .build
-bootstrap/*
+bootstrap/*.img
 repositories/*
 *.rpm
 *.deb
