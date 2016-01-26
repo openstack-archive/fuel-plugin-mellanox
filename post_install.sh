@@ -13,6 +13,8 @@ if [ -d $FUEL_BOOTSTRAP_DIR ]; then
   do
     if [ ! -f $BOOTSTRAP_BACKUP_DIR/$i ]; then
       \mv $FUEL_BOOTSTRAP_DIR/$i $BOOTSTRAP_BACKUP_DIR
+    else
+      \rm $FUEL_BOOTSTRAP_DIR/$i
     fi
   done
 
