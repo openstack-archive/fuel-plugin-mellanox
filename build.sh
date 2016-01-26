@@ -63,6 +63,9 @@ pip install $(ls -d $PLUGIN_BUILDER_PACKAGE_DIR/*) || fail_on_error "Failed inst
 popd > /dev/null
 
 # Create Mellanox Plugin
-fuel-plugin-builder --build . || fail_on_error "Building mellanox plugin failed"
+fuel-plugin-builder --debug --build . || fail_on_error "Building mellanox plugin failed"
+
+# Change permissions of the plugin
+sudo chmod 755 mellanox-plugin*
 
 popd > /dev/null
