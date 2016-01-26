@@ -14,6 +14,7 @@ if [ -d $FUEL_BOOTSTRAP_DIR ]; then
     if [ ! -f $BOOTSTRAP_BACKUP_DIR/$i ]; then
       \mv $FUEL_BOOTSTRAP_DIR/$i $BOOTSTRAP_BACKUP_DIR
     fi
+  \rm $FUEL_BOOTSTRAP_DIR/$i
   done
 
   \cp $(ls $PLUGINS_DIR/mellanox-plugin*/bootstrap/initrd_mlnx*) $FUEL_BOOTSTRAP_DIR

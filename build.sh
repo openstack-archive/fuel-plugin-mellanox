@@ -51,10 +51,6 @@ fail_on_error "Failed installing some required packages"
 git clone https://github.com/stackforge/fuel-plugins.git $TMP_DIR/fuel-plugins ||
 fail_on_error "Failed cloning fuel-plugin-builder git repository"
 
-# Append bootstrap post install to the spec
-plugin_template=$PLUGIN_BUILDER_DIR/fuel_plugin_builder/templates/v$FUEL_PLUGIN_VERSION
-sed -i '/%post/r specs/post.spec' $plugin_template/build/plugin_rpm.spec.mako
-
 # Install plugin builder
 pushd $PLUGIN_BUILDER_DIR > /dev/null
 rm -f $PLUGIN_BUILDER_PACKAGE_DIR/*
@@ -63,6 +59,9 @@ pip install $(ls -d $PLUGIN_BUILDER_PACKAGE_DIR/*) || fail_on_error "Failed inst
 popd > /dev/null
 
 # Create Mellanox Plugin
-fuel-plugin-builder --build . || fail_on_error "Building mellanox plugin failed"
+fuel-plugin-builder --debug --build . || fail_on_error "Building mellanox plugin failed"
+
+# Change permissions of the plugin
+sudo chmod 755 mellanox-plugin*
 
 popd > /dev/null
