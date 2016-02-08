@@ -19,10 +19,11 @@ class mellanox_openstack::controller_sriov (
     ensure => installed,
   }
 
+  nova_config { 'DEFAULT/scheduler_default_filters':
+    value => 'RetryFilter, AvailabilityZoneFilter, RamFilter, ComputeFilter, ComputeCapabilitiesFilter, ImagePropertiesFilter, PciPassthroughFilter'
+  }
+
   if ( $mlnx_driver == 'mlx4_en' ){
-    nova_config { 'DEFAULT/scheduler_default_filters':
-      value => 'RetryFilter, AvailabilityZoneFilter, RamFilter, ComputeFilter, ComputeCapabilitiesFilter, ImagePropertiesFilter, PciPassthroughFilter'
-    }
     $ml2_extra_mechanism_driver = 'sriovnicswitch'
     neutron_plugin_ml2 {
       'ml2/mechanism_drivers':                  value => "${ml2_extra_mechanism_driver},${mechanism_drivers}";
@@ -48,15 +49,9 @@ class mellanox_openstack::controller_sriov (
   Service[$server_service]
 
   if ( $mlnx_driver == 'eth_ipoib' and $mlnx_sriov == true ){
-    # To remove in a separated PR for Liberty changes
-    package { 'mlnx-dnsmasq' :
-      ensure    =>  installed,
-      subscribe =>  Service[$server_service]
-    }
 
     neutron_dhcp_agent_config { 'DEFAULT/dhcp_driver' :
-      value     => 'mlnx_dhcp.MlnxDnsmasq',
-      subscribe =>  Package['mlnx-dnsmasq']
+      value     => 'networking_mlnx.dhcp.mlnx_dhcp.MlnxDnsmasq',
     }
 
     service { $dhcp_agent :
