@@ -5,7 +5,7 @@ name: mellanox-plugin
 title: Mellanox Openstack features
 
 # Plugin version
-version: 2.0.20
+version: 2.0.21
 
 # Description
 description: Enable features over Mellanox hardware
@@ -23,7 +23,7 @@ authors: ['aviramb@mellanox.com', 'rawanh@mellanox.com']
 homepage: 'https://github.com/stackforge/fuel-plugin-mellanox/'
 
 # Groups of nodes on which the plugin takes effect
-groups: ['storage::cinder', 'hypervisor']
+groups: ['storage::cinder', 'network', 'hypervisor']
 
 # The plugin is compatible with releases in the list
 releases:
