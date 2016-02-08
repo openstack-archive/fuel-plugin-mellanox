@@ -6,7 +6,7 @@ $exclude_vf = '0'
 
 if ($mlnx['sriov']) {
   class { 'mellanox_openstack::compute_sriov' :
-    physnet             => $quantum_settings['predefined_networks']['net04']['L2']['physnet'],
+    physnet             => $quantum_settings['default_private_net'],
     physifc             => $mlnx['physical_port'],
     mlnx_driver         => $mlnx['driver'],
     firewall_driver     => $firewall_driver,

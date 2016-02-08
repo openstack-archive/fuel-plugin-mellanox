@@ -15,19 +15,21 @@ class mellanox_openstack::compute_sriov (
   $libvirt_package_name = $nova::params::libvirt_package_name
 
   $path_to_generate_pci_script = generate ("/bin/bash", "-c", 'echo /etc/fuel/plugins/mellanox-plugin-*.0/generate_pci_passthrough_whitelist.py | tr -d \'\n \' ')
-  $pci_passthrough_addresses = generate ("/usr/bin/python", $path_to_generate_pci_script, $exclude_vf, $physnet)
+  $pci_passthrough_addresses = generate ("/usr/bin/python", $path_to_generate_pci_script, $exclude_vf, $physnet, $physifc)
 
-  if ( $mlnx_driver == 'mlx4_en' ){
-    # configure pci_passthrough_whitelist nova compute
+  # configure pci_passthrough_whitelist nova compute
+  if ($pci_passthrough_addresses) {
     nova_config { 'DEFAULT/pci_passthrough_whitelist':
       value => check_array_of_hash("${pci_passthrough_addresses}"),
     }
+  }
 
-    # update [securitygroup] section in neutron
-    neutron_plugin_ml2 { 'securitygroup/firewall_driver':
-      value => $firewall_driver,
-    }
+  # update [securitygroup] section in neutron
+  neutron_plugin_ml2 { 'securitygroup/firewall_driver':
+    value => $firewall_driver,
+  }
 
+  if ( $mlnx_driver == 'mlx4_en' ){
     package { $sriov_agent_package:
       ensure => installed,
     }
@@ -43,7 +45,6 @@ class mellanox_openstack::compute_sriov (
     Service[$sriov_agent_service]
 
   } elsif ( $mlnx_driver == 'eth_ipoib' ){
-
     class { 'mellanox_openstack::eswitchd' :
         physnet => $physnet,
         physifc => $physifc,

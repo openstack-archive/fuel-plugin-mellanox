@@ -1,11 +1,32 @@
+# Setup standard repositories for MLNX_OFED installation
+- role: '*'
+  id: hiera_mlnx
+  parameters:
+    puppet_manifest: /etc/puppet/modules/osnailyfacter/modular/hiera/hiera.pp
+    puppet_modules: /etc/puppet/modules
+    timeout: 3600
+  required_for: [setup_repositories_mlnx]
+  requires: [pre_deployment_start]
+  type: puppet
+  version: 2.0.0
+- role: '*'
+  id: setup_repositories_mlnx
+  parameters:
+    puppet_manifest: /etc/puppet/modules/osnailyfacter/modular/fuel_pkgs/setup_repositories.pp
+    puppet_modules: /etc/puppet/modules
+    timeout: 600
+  requires: [hiera_mlnx]
+  required_for: [pre_deployment_end]
+  type: puppet
+  version: 2.0.0
 # Log a notice about pre_deployment start
 - id: init_mlnx_logs
   role: '*'
-  required_for: [pre_deployment_end]
-  requires: [pre_deployment_start]
+  required_for: [link_astute_file]
+  requires: [setup_repositories_mlnx]
   type: shell
   parameters:
-    cmd: ./log_stage.sh pre_deployment
+    cmd: ./log_stage.sh mlnx_deployment_start
     timeout: 5
 # This is a workaround: during the plugin pre_deployment stage
 # there is no symbolic link from astute.yaml to <role>.yaml.
@@ -13,8 +34,8 @@
 # this script links astute.yaml to any <role>.yaml on each node.
 - id: link_astute_file
   role: '*'
-  required_for: [pre_deployment_end]
-  requires: [pre_deployment_start]
+  required_for: [customize_mellanox_hiera]
+  requires: [init_mlnx_logs]
   type: shell
   parameters:
     cmd: ./link_astute_file.sh
@@ -23,8 +44,8 @@
 # Hiera, to make the data easily accessible and independent of astute.yaml
 - id: customize_mellanox_hiera
   role: '*'
-  required_for: [pre_deployment_end]
-  requires: [pre_deployment_start]
+  required_for: [validate_kernel_devel]
+  requires: [link_astute_file]
   type: shell
   parameters:
     cmd: ./mellanox_settings.py
@@ -32,8 +53,8 @@
 # Verify kernel-devel packages are installed (if CentOS)
 - id: validate_kernel_devel
   role: '*'
-  required_for: [pre_deployment_end]
-  requires: [pre_deployment_start]
+  required_for: [install_mlnx_ofed]
+  requires: [customize_mellanox_hiera]
   type: puppet
   parameters:
     puppet_manifest: puppet/manifests/verify_kernel_devel.pp
@@ -42,8 +63,8 @@
 # Install OFED + FW upgrade
 - id: install_mlnx_ofed
   role: '*'
-  required_for: [pre_deployment_end]
-  requires: [pre_deployment_start]
+  required_for: [configure_vxlan_offload]
+  requires: [validate_kernel_devel]
   type: shell
   parameters:
     cmd: ./install_ofed.sh
@@ -51,8 +72,8 @@
 # add VXLAN offloading parameters
 - id: configure_vxlan_offload
   role: '*'
-  required_for: [pre_deployment_end]
-  requires: [pre_deployment_start]
+  required_for: [configure_sriov]
+  requires: [install_mlnx_ofed]
   type: shell
   parameters:
     cmd: ./vxlan_offloading.sh configure
@@ -61,8 +82,8 @@
 # change modprobe file + IOMMU in grub file + change VFs num in FW
 - id: configure_sriov
   role: '*'
-  required_for: [pre_deployment_end]
-  requires: [pre_deployment_start]
+  required_for: [rename_iser_probe_vf]
+  requires: [configure_vxlan_offload]
   type: shell
   parameters:
     cmd: ./sriov.sh configure
@@ -70,8 +91,8 @@
 # if VXLAN is not required. Rename iSER interface for Eth mode
 - id: rename_iser_probe_vf
   role: '*'
-  required_for: [pre_deployment_end]
-  requires: [pre_deployment_start]
+  required_for: [reboot_after_ofed]
+  requires: [configure_sriov]
   type: puppet
   parameters:
     puppet_manifest: puppet/manifests/iser_rename.pp
@@ -80,16 +101,16 @@
 # Reboot due to OFED installation / IOMMU configuration
 - id: reboot_after_ofed
   role: '*'
-  required_for: [pre_deployment_end]
-  requires: [pre_deployment_start]
+  required_for: [validate_sriov]
+  requires: [rename_iser_probe_vf]
   type: reboot
   parameters:
     timeout: 420
 # change modprobe file + IOMMU in grub file + change VFs num in FW
 - id: validate_sriov
   role: '*'
-  required_for: [pre_deployment_end]
-  requires: [pre_deployment_start]
+  required_for: [remove_blocking_iptable_roles]
+  requires: [reboot_after_ofed]
   type: shell
   parameters:
     cmd: ./sriov.sh validate
@@ -98,7 +119,7 @@
 - id: remove_blocking_iptable_roles
   role: '*'
   required_for: [pre_deployment_end]
-  requires: [pre_deployment_start]
+  requires: [validate_sriov]
   type: shell
   parameters:
     cmd: ./blocking_iptables_rules.sh
@@ -116,7 +137,7 @@
 - id: configure_mellanox_controller
   role: ['controller', 'primary-controller']
   required_for: [post_deployment_end]
-  requires: [post_deployment_start]
+  requires: [print_stage_post_deployment]
   type: puppet
   parameters:
     puppet_manifest: puppet/manifests/controller.pp
@@ -125,7 +146,7 @@
 - id: configure_mellanox_compute
   role: ['compute']
   required_for: [post_deployment_end]
-  requires: [post_deployment_start]
+  requires: [print_stage_post_deployment]
   type: puppet
   parameters:
     puppet_manifest: puppet/manifests/compute.pp
@@ -134,7 +155,7 @@
 - id: configure_mellanox_cinder
   role: ['cinder']
   required_for: [post_deployment_end]
-  requires: [post_deployment_start]
+  requires: [print_stage_post_deployment]
   type: puppet
   parameters:
     puppet_manifest: puppet/manifests/cinder.pp
@@ -144,7 +165,7 @@
 # if exists
 - id: configure_mlnx_iser_ib
   role: '*'
-  required_for: [post_deployment_end]
+  required_for: [move_ib_interfaces_to_persistent]
   requires: [post_deployment_start]
   type: puppet
   parameters:
@@ -156,16 +177,16 @@
 - id: move_ib_interfaces_to_persistent
   role: '*'
   required_for: [post_deployment_end]
-  requires: [post_deployment_start]
+  requires: [configure_mlnx_iser_ib]
   type: shell
   parameters:
     cmd: ./move_ubuntu_ib_interfaces_conf.sh
-    timeout: 60
+    timeout: 120
 # Override the testvm with Mellanox Cirros TestVM
 - id: replace_cirros_sriov
   role: ['primary-controller']
   required_for: [post_deployment_end]
-  requires: [post_deployment_start]
+  requires: [move_ib_interfaces_to_persistent]
   type: shell
   parameters:
     cmd: source /root/openrc; ./replace_cirros.sh
