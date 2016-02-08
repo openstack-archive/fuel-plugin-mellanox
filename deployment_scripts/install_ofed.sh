@@ -131,6 +131,7 @@ function enable_eipoib (){
     sed -i s/^E_IPOIB_LOAD.*$/E_IPOIB_LOAD=yes/g /etc/infiniband/openib.conf
     echo "options ib_ipoib recv_queue_size=128 send_queue_size=128" > /etc/modprobe.d/ipoib.conf
     \cp -f ./ipoibd /sbin/ipoibd
+    \cp -f ./openibd /etc/init.d/openibd
   fi
 }
 
