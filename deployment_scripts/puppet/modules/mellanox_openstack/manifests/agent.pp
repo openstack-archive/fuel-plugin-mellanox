@@ -10,6 +10,7 @@ class mellanox_openstack::agent (
     $filters_file         = $::mellanox_openstack::params::filters_file
     $compute_service_name = $::mellanox_openstack::params::compute_service_name
     $mlnx_agent_conf      = $::mellanox_openstack::params::mlnx_agent_conf
+    $mlnx_agent_init_file = $::mellanox_openstack::params::mlnx_agent_init_file
 
     # Only relevant for Debian since no package provides network.filters file
     if $::osfamily == 'Debian' {
@@ -39,6 +40,12 @@ class mellanox_openstack::agent (
         owner => 'neutron'
     }
 
+    exec { 'fix_mlnx_agent_init' :
+      command => "sed -i s/neutron-plugin-mlnx-agent/neutron-mlnx-agent/g $mlnx_agent_init_file",
+      onlyif  => "test -f $mlnx_agent_init_file && cat $mlnx_agent_init_file | grep -q neutron-plugin-mlnx-agent",
+      path    => ['/bin', '/sbin', '/usr/bin']
+    }
+
     mellanox_agent_config {
         'eswitch/physical_interface_mappings' : value => "${physnet}:${physifc}";
     }
@@ -64,6 +71,7 @@ class mellanox_openstack::agent (
     Package[$package] ->
     File[$mlnx_agent_conf] ->
     Mellanox_agent_config <||> ~>
+    Exec[fix_mlnx_agent_init] ~>
     Service[$agent] ~>
     Service[$compute_service_name]
 
