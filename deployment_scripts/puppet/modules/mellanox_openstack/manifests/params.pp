@@ -22,6 +22,7 @@ class mellanox_openstack::params {
       $compute_service_name             = 'nova-compute'
       $openvswitch_mgmt_service         = 'openvswitch-switch'
       $libvirt_driver_file              = '/usr/lib/python2.7/dist-packages/nova/virt/libvirt/driver.py'
+      $mlnx_agent_init_file             = '/etc/init/neutron-plugin-mlnx-agent.conf'
     }
   }
 
