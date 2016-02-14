@@ -201,6 +201,7 @@ class MellanoxSettings(object):
             'bridge': 'br-storage',
             'name': storage_parent,
         })
+        endpoints['br-storage'] = {'IP' : 'None'}
 
     @classmethod
     def get_endpoints_section(cls):
