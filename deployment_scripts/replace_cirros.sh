@@ -41,7 +41,15 @@ puppet apply -e 'package { "cirros-testvm": ensure => absent }' &&
 puppet apply -e 'package { "cirros-testvm-mellanox": ensure => absent }' &&
 puppet apply -e 'package { "cirros-testvm-mellanox-ib": ensure => absent }' &&
 install_cirros $CIRROS_PACKAGE_NAME &&
-ruby /etc/puppet/modules/osnailyfacter/modular/astute/upload_cirros.rb 2>/dev/null
+. /root/openrc &&
+glance image-create \
+  --name TestVM \
+  --disk-format=qcow2 \
+  --container-format=bare \
+  --visibility public \
+  --progress \
+  --file /usr/share/cirros-testvm/cirros-x86_64-disk.img >> /var/log/mellanox-plugin.log
+
 if [ $? -ne 0 ]; then
   logger_print error "Replacing Cirros image with Mellanox-Cirros image failed"
   exit 1
