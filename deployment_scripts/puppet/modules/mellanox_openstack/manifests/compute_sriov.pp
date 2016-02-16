@@ -34,6 +34,11 @@ class mellanox_openstack::compute_sriov (
       ensure => installed,
     }
 
+    sriov_nic_agent_config {
+      'sriov_nic/physical_device_mappings': value => "$physnet:$physifc";
+      'securitygroup/firewall_driver'     : value => "neutron.agent.firewall.NoopFirewallDriver";
+    }
+
     service { $sriov_agent_service:
       ensure     => running,
       enable     => true,
@@ -42,25 +47,26 @@ class mellanox_openstack::compute_sriov (
     }
 
     Package[$sriov_agent_package] ->
+    Sriov_nic_agent_config<||> ~>
     Service[$sriov_agent_service]
 
   } elsif ( $mlnx_driver == 'eth_ipoib' ){
     class { 'mellanox_openstack::eswitchd' :
-        physnet => $physnet,
-        physifc => $physifc,
+      physnet => $physnet,
+      physifc => $physifc,
     }
 
     class { 'mellanox_openstack::agent' :
-        physnet => $physnet,
-        physifc => $physifc,
+      physnet => $physnet,
+      physifc => $physifc,
     }
 
     package { $libvirt_package_name :
-        ensure => installed
+      ensure => installed
     }
 
     service { $libvirt_service_name :
-        ensure => running
+      ensure => running
     }
 
     Package[$libvirt_package_name] ->
