@@ -13,6 +13,7 @@
 # implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import os
 import sys
 import subprocess
 
@@ -32,16 +33,22 @@ def get_pci_list():
 
 def exclude_vfs(exclude_vf_numbers, pci_res, physifc):
   if len( exclude_vf_numbers ) > 0:
+
     # parse the exclude_vf_numbers
     exclude_vf_list = [exclude_vf_list.strip() for exclude_vf_list in \
                       exclude_vf_numbers.split(',')]
     for vf_number in exclude_vf_list:
+
        # remove iSER vf in exclude list
-       command_get_iser_vf = "readlink /sys/class/net/{0}/device/virtfn{1}\
-                              | cut -d':' -f2-".format(physifc, vf_number)
+       vf_file = "/sys/class/net/{0}/device/virtfn{1}".format(physifc, vf_number)
+       if not os.path.exists(vf_file):
+         print "VF {1} does not exists for {0}".format(physifc, vf_number)
+         exit(1)
+       command_get_iser_vf = "readlink {0} | cut -d':' -f2-".format(vf_file)
 
        p = subprocess.Popen(command_get_iser_vf, shell=True, stdout=subprocess.PIPE,
                             stderr=subprocess.STDOUT)
+
        # to avoid bus IDs duplication when using more than a single port nic
        bus = list(set(p.stdout.readlines())).pop().strip()
        retval = p.wait()
@@ -60,5 +67,14 @@ def main(exclude_vf_numbers, physnet, physifc):
   sys.stdout.write(pci_res_str2)
   return pci_res_str2
 
+def usage():
+  print "Wrong number of arguments."
+  print 'Usage: '+sys.argv[0]+' [exclude_vf1[,exclude_vf2,..]] <physnet> <physifc>'
+
 if __name__=="__main__":
-  main(sys.argv[1], sys.argv[2], sys.argv[3])
+  if len(sys.argv ) == 3:
+      main([], sys.argv[1], sys.argv[2])
+  elif len(sys.argv ) == 4:
+      main(sys.argv[1], sys.argv[2], sys.argv[3])
+  else:
+      usage()
