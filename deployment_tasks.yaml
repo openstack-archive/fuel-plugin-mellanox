@@ -27,7 +27,7 @@
   type: shell
   parameters:
     cmd: ./log_stage.sh mlnx_deployment_start
-    timeout: 5
+    timeout: 10
 # This is a workaround: during the plugin pre_deployment stage
 # there is no symbolic link from astute.yaml to <role>.yaml.
 # Since the data that the plugin uses is common to all <role>.yaml files,
@@ -39,7 +39,7 @@
   type: shell
   parameters:
     cmd: ./link_astute_file.sh
-    timeout: 5
+    timeout: 10
 # Add relevant settings for Mellanox manifests to mellanox plugin section in
 # Hiera, to make the data easily accessible and independent of astute.yaml
 - id: customize_mellanox_hiera
@@ -49,7 +49,7 @@
   type: shell
   parameters:
     cmd: ./mellanox_settings.py
-    timeout: 10
+    timeout: 20
 # Verify kernel-devel packages are installed (if CentOS)
 - id: validate_kernel_devel
   role: '*'
@@ -77,7 +77,7 @@
   type: shell
   parameters:
     cmd: ./vxlan_offloading.sh configure
-    timeout: 60
+    timeout: 120
 # Configure number of VFs according to the user decision:
 # change modprobe file + IOMMU in grub file + change VFs num in FW
 - id: configure_sriov
@@ -87,7 +87,7 @@
   type: shell
   parameters:
     cmd: ./sriov.sh configure
-    timeout: 60
+    timeout: 200
 # if VXLAN is not required. Rename iSER interface for Eth mode
 - id: rename_iser_probe_vf
   role: '*'
@@ -97,7 +97,7 @@
   parameters:
     puppet_manifest: puppet/manifests/iser_rename.pp
     puppet_modules: puppet/modules:/etc/puppet/modules
-    timeout: 60
+    timeout: 200
 # Reboot due to OFED installation / IOMMU configuration
 - id: reboot_after_ofed
   role: '*'
@@ -105,7 +105,7 @@
   requires: [rename_iser_probe_vf]
   type: reboot
   parameters:
-    timeout: 420
+    timeout: 500
 # Check number of VFs
 - id: validate_sriov
   role: '*'
@@ -114,7 +114,7 @@
   type: shell
   parameters:
     cmd: ./sriov.sh validate
-    timeout: 60
+    timeout: 200
 # Load required kmods for SR-IOV
 - id: modprobe_vfio
   role: ['compute']
@@ -123,7 +123,7 @@
   type: shell
   parameters:
     cmd: ./vfio.sh
-    timeout: 60
+    timeout: 200
 # This is a workaround: disable wrong rules in CentOS IBP #1458832.
 - id: remove_blocking_iptable_roles
   role: '*'
@@ -132,7 +132,7 @@
   type: shell
   parameters:
     cmd: ./blocking_iptables_rules.sh
-    timeout: 20
+    timeout: 200
 # Log a notice about post_deployment start
 - id: print_stage_post_deployment
   role: '*'
@@ -141,7 +141,7 @@
   type: shell
   parameters:
     cmd: ./log_stage.sh post_deployment
-    timeout: 5
+    timeout: 20
 # Execute post_deployment manifest for each role
 - id: configure_mellanox_controller
   role: ['controller', 'primary-controller']
@@ -151,7 +151,7 @@
   parameters:
     puppet_manifest: puppet/manifests/controller.pp
     puppet_modules: puppet/modules:/etc/puppet/modules
-    timeout: 360
+    timeout: 500
 - id: configure_mellanox_compute
   role: ['compute']
   required_for: [post_deployment_end]
@@ -160,7 +160,7 @@
   parameters:
     puppet_manifest: puppet/manifests/compute.pp
     puppet_modules: puppet/modules:/etc/puppet/modules
-    timeout: 360
+    timeout: 500
 - id: configure_mellanox_cinder
   role: ['cinder']
   required_for: [post_deployment_end]
@@ -169,7 +169,7 @@
   parameters:
     puppet_manifest: puppet/manifests/cinder.pp
     puppet_modules: puppet/modules:/etc/puppet/modules
-    timeout: 360
+    timeout: 500
 # Set storage network configurations on the IB child
 # if exists
 - id: configure_mlnx_iser_ib
@@ -180,7 +180,7 @@
   parameters:
     puppet_manifest: puppet/manifests/configure_iser_child.pp
     puppet_modules: puppet/modules:/etc/puppet/modules
-    timeout: 120
+    timeout: 200
 # Move Ubuntu iSER conigurations to /etc/network/interfaces
 # For MLNX_OFED drivers
 - id: move_ib_interfaces_to_persistent
