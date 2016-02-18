@@ -21,7 +21,8 @@ class mellanox_openstack::compute_sriov (
   if ($pci_passthrough_addresses) {
     nova_config { 'DEFAULT/pci_passthrough_whitelist':
       value => check_array_of_hash("${pci_passthrough_addresses}"),
-    }
+    } ~>
+    Service<| title == $nova::params::compute_service_name |>
   }
 
   # update [securitygroup] section in neutron
