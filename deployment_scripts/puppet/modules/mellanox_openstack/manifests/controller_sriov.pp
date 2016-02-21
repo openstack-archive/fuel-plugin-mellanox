@@ -48,17 +48,21 @@ class mellanox_openstack::controller_sriov (
   Neutron_plugin_ml2 <||> ~>
   Service[$server_service]
 
-  if ( $mlnx_driver == 'eth_ipoib' and $mlnx_sriov == true ){
-
+  if ( $mlnx_driver == 'eth_ipoib' ){
     neutron_dhcp_agent_config { 'DEFAULT/dhcp_driver' :
       value     => 'networking_mlnx.dhcp.mlnx_dhcp.MlnxDnsmasq',
+    }
+
+    neutron_dhcp_agent_config { 'DEFAULT/dhcp_broadcast_reply' :
+      value     => 'True',
     }
 
     service { $dhcp_agent :
       ensure     =>  running,
       enable     =>  true,
       provider   =>  pacemaker,
-      subscribe  =>  Neutron_dhcp_agent_config['DEFAULT/dhcp_driver'],
+      subscribe  =>  [Neutron_dhcp_agent_config['DEFAULT/dhcp_driver'],
+                      Neutron_dhcp_agent_config['DEFAULT/dhcp_broadcast_reply']],
     }
   }
 }
