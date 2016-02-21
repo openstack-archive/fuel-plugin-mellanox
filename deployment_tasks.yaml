@@ -185,19 +185,19 @@
 # For MLNX_OFED drivers
 - id: move_ib_interfaces_to_persistent
   role: '*'
-  required_for: [post_deployment_end]
+  required_for: [cp_sriov_user_scripts]
   requires: [configure_mlnx_iser_ib]
   type: shell
   parameters:
     cmd: ./move_ubuntu_ib_interfaces_conf.sh
     timeout: 120
-# Override the testvm with Mellanox Cirros TestVM
-- id: replace_cirros_sriov
-  role: ['primary-controller']
+# Copy SR-IOV user scripts to controllers
+- id: cp_sriov_user_scripts
+  role: ['controller', 'primary-controller']
   required_for: [post_deployment_end]
   requires: [move_ib_interfaces_to_persistent]
   type: shell
   parameters:
-    cmd: source /root/openrc; ./replace_cirros.sh
+    cmd: cp -r ./user_scripts/* /sbin/
     timeout: 180
     retries: 10

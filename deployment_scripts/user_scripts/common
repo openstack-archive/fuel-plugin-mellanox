@@ -1,0 +1,83 @@
+#!/bin/bash
+# Copyright 2016 Mellanox Technologies, Ltd
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+# implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+readonly SCRIPT_NAME=`basename $0`
+
+sysctl_conf_no_apply=no
+
+function sysctl_conf (){
+
+  # params
+  op="$1"
+  var="$2"
+  val="$3"
+
+  # apply
+  if [ "x$op" == "xapply" ]; then
+    sysctl -e -p > /dev/null 2>&1
+  fi
+
+  # unset
+  if [ "x$op" == "xunset" -a "x$var" != "x" ]; then
+    sed -e "/^[\t\ ]*$var[\t\ ]*=.*$/d" -i /etc/sysctl.conf
+    if [ "x$sysctl_conf_no_apply" != "xyes" ]; then
+      sysctl_conf apply
+    fi
+  fi
+
+  # set
+  if [ "x$op" == "xset" -a "x$var" != "x" -a "x$val" != "x" ]; then
+    sysctl_conf_no_apply=yes
+    sval="$val"
+    sysctl_conf unset "$var"
+    echo "$var=$sval" >> /etc/sysctl.conf
+    sysctl_conf apply
+    sysctl_conf_no_apply=no
+  fi
+}
+
+function logger_print () {
+  priority=$1
+  msg=$2
+  logger -t $SCRIPT_NAME "${priority}: ${msg}"
+  echo $(date +"%Y-%m-%d %H:%M:%S") $SCRIPT_NAME ${priority}: ${msg} >> /var/log/mellanox-plugin.log
+}
+
+function get_mlnx_param () {
+  param="$1"
+  val=$(ruby -r hiera -r yaml -e "hiera = Hiera.new(:config => '/etc/puppet/hiera.yaml'); mlnx = hiera.lookup 'mellanox-plugin', [], {};  puts mlnx['"$param"']")
+  echo $val
+}
+
+function get_distro () {
+  if [[ -f /etc/redhat-release ]]; then
+    dist='redhat';
+  elif [[ -f /etc/debian_version ]]; then
+    dist='ubuntu';
+  else
+    logger_print error "Could not detect linux distribution"
+  fi
+  echo $dist
+}
+
+readonly DISTRO=`get_distro`
+readonly DRIVER=`get_mlnx_param driver`
+readonly SRIOV=`get_mlnx_param sriov`
+readonly USER_NUM_OF_VFS=`get_mlnx_param num_of_vfs`
+readonly ISER=`get_mlnx_param iser`
+readonly MAX_VFS=64
+readonly MIN_VFS=1
+readonly VXLAN_OFFLOADING=`get_mlnx_param vxlan_offloading`
