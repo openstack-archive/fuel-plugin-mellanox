@@ -25,7 +25,7 @@ function install_cirros() {
 }
 
 if [ $SRIOV == false ]; then
-  logger_print info "Skipping cirros image replacement, Mellanox-Cirros is required
+  logger_print info "Skipping cirros image installation, Mellanox-Cirros is required
                      only for SR-IOV deployments"
   exit 0
 fi
@@ -36,14 +36,13 @@ else
   CIRROS_PACKAGE_NAME='cirros-testvm-mellanox'
 fi
 
-ruby ./delete_images.rb 2>/dev/null &&
 puppet apply -e 'package { "cirros-testvm": ensure => absent }' &&
 puppet apply -e 'package { "cirros-testvm-mellanox": ensure => absent }' &&
 puppet apply -e 'package { "cirros-testvm-mellanox-ib": ensure => absent }' &&
 install_cirros $CIRROS_PACKAGE_NAME &&
 . /root/openrc &&
 glance image-create \
-  --name TestVM \
+  --name $CIRROS_PACKAGE_NAME \
   --disk-format=qcow2 \
   --container-format=bare \
   --visibility public \
@@ -51,9 +50,9 @@ glance image-create \
   --file /usr/share/cirros-testvm/cirros-x86_64-disk.img >> /var/log/mellanox-plugin.log
 
 if [ $? -ne 0 ]; then
-  logger_print error "Replacing Cirros image with Mellanox-Cirros image failed"
+  logger_print error "Installing Cirros image with Mellanox SR-IOV support failed"
   exit 1
 else
-  logger_print info "Cirros image was successfully replaced with Mellanox-Cirros image"
+  logger_print info "Cirros mellanox SR-IOV image was successfully installed"
   exit 0
 fi

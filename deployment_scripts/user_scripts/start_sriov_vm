@@ -1,0 +1,27 @@
+#!/bin/bash
+# Copyright 2016 Mellanox Technologies, Ltd
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+# implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+. /root/openrc
+glance_line=`glance image-list | grep mellanox`
+if [[ $glance_line == *mellanox* ]]; then
+  SRIOV_IMAGE=`echo $glance_line | head -n 1 | awk '{print $2}'`
+  port_id=`neutron port-create admin_internal_net --name sriov_port --vnic-type direct | grep " id " | awk '{print $4}'`
+  nova boot --flavor m1.tiny --image $SRIOV_IMAGE --nic port-id=$port_id "sriov_vm-$port_id"
+  exit 0
+else
+  echo "No Mellanox SR-IOV cirros found. Please use 'upload_sriov_cirros' script"
+  exit 1
+fi
