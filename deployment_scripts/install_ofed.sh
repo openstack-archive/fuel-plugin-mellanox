@@ -122,7 +122,6 @@ function update_fw_if_not_oem () {
   ${OFED_INSTALL_SCRIPT_CMD} --force --enable-sriov --fw-update-only
   if [ $? -ne 0 ]; then
     logger_print error "Failed execute ${OFED_INSTALL_SCRIPT_CMD} error code $?"
-    exit 1
   fi
 }
 
