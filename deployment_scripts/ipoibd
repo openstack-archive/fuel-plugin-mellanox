@@ -433,6 +433,7 @@ class EipoibParent(Parent):
 		self.logger.info("Update %s file" % file_name)
 		self.logger.debug("Runing cmd:%s\n" % cmd)
 		rc = os.system(cmd)
+		time.sleep(0.5)
 		if rc:
 			self.logger.warning("cmd failed! (%s)" % cmd)
 			return 1
@@ -514,6 +515,7 @@ class NicObserver(Observer):
 		self.logger.debug("Runing cmd:%s\n" % cmd)
 		try:
 			(rc, out) = commands.getstatusoutput(cmd)
+			time.sleep(0.2)
 			if rc:
 				self.logger.warning("cmd failed! (%s)" % cmd)
 				return 1
@@ -695,12 +697,12 @@ class VirtualNicObserver(NicObserver):
 	# forced_vlan in case of patch-port etc.
 	def get_nic_vif_macs(self, nic, forced_vlan = None):
 		# Get handlers of LB / OVS
-                ovs_br = KVMOvsNicObserver()
+		ovs_br = KVMOvsNicObserver()
 		lb_br = KVMVirtualNicObserver()
 		vlan_ob = VirtualVlanObserver()
 		vlan_ob.parent = self.parent
-                ovs_br.parent = self.parent
-                lb_br.parent = self.parent
+		ovs_br.parent = self.parent
+		lb_br.parent = self.parent
 
 		macs = []
 		br = self.get_br_by_nic(nic)
@@ -715,7 +717,6 @@ class VirtualNicObserver(NicObserver):
 		self.logger.debug("%s nics list %s" % (br, str(nics)))
 		self.add_to_scanned_list(nic)
 		for n in nics:
-
 			if (n in self.scanned_port):
 				self.logger.debug("No need to check peer for n: %s Parent %s and scanned_port: %s forced_vlan: %s" % (n, nic, str(self.scanned_port), str(forced_vlan)))
 				continue
@@ -756,16 +757,16 @@ class VirtualNicObserver(NicObserver):
 			# Check if interface is connected to OVS too
 			# br = br-prv / br-int ..
 			# ovs_br = KVMOvsNicObserver object
-                        br = ovs_br.get_br_by_nic(n)
+			br = ovs_br.get_br_by_nic(n)
 			lbr = lb_br.get_br_by_nic(n)
 			if br and lbr:
 				if self.first_ovs_br is None:
 					self.first_ovs_br = br
 					ovs_br.first_ovs_br = self.first_ovs_br
 					self.logger.debug("Found OVS br %s for port %s." % (br, n))
-                                ovs_br.scanned_port = self.scanned_port
+				ovs_br.scanned_port = self.scanned_port
 				macs_ovsbr = list(set(ovs_br.get_nic_vif_macs(n, None)))
-                                if macs_ovsbr:
+				if macs_ovsbr:
 					self.logger.debug("Found macs in OVS over LB port %s: %s" % (n, macs_ovsbr))
 					macs = macs + macs_ovsbr
 
@@ -774,9 +775,9 @@ class VirtualNicObserver(NicObserver):
 					self.logger.debug("ovs_mapped_mac_2_vlan is %s" % ovs_br.map_mac_2_vlan)
 					self.map_mac_2_vlan.update(ovs_br.map_mac_2_vlan)
 					self.logger.debug("updated_mapped_mac_2_vlan is %s" % self.map_mac_2_vlan)
-                                        vlan_rules = ovs_br.get_vlan_vifs([self.first_ovs_br])
-                                        self.logger.debug("vlan rules %s for bridge %s" % (vlan_rules, self.first_ovs_br))
-                                        for vlan, macs_for_vlan in vlan_rules.items():
+					vlan_rules = ovs_br.get_vlan_vifs([self.first_ovs_br])
+					self.logger.debug("vlan rules %s for bridge %s" % (vlan_rules, self.first_ovs_br))
+					for vlan, macs_for_vlan in vlan_rules.items():
 						for m in macs_for_vlan:
 							self.map_mac_2_vlan[m] = vlan
 							ovs_br.map_mac_2_vlan[m] = vlan
@@ -790,24 +791,37 @@ class VirtualNicObserver(NicObserver):
 						new_vlan_macs = list(set(vlan_macs) - set(self.known_vlan_macs[vlan_id]))
 						if new_vlan_macs:
 							vlan_if = self.parent.name + "." + vlan_id
-							self.logger.debug("Found new vlan macs %s for vlan %s." % (new_vlan_macs, vlan_id))
-							vlan_ob.add_loop(vlan_if, [], new_vlan_macs, [vlan_if])
-							self.known_vlan_macs[vlan_id] = self.known_vlan_macs[vlan_id] + new_vlan_macs
+							existing_macs = []
+							for mac in new_vlan_macs:
+								current_slave = self.get_slave_by_mac(mac, vlan_if, vlan_id = vlan_id)
+								if current_slave is not None:
+									existing_macs.append(mac)
+							new_vlan_macs = list(set(new_vlan_macs) - set(existing_macs))
+							if new_vlan_macs:
+								self.logger.debug("Found new vlan macs %s for vlan %s." % (new_vlan_macs, vlan_id))
+								vlan_ob.add_loop(vlan_if, [], new_vlan_macs, [vlan_if])
+								self.known_vlan_macs[vlan_id] = self.known_vlan_macs[vlan_id] + new_vlan_macs
 
-                                        # Remove loop
-                                        for vlan_id, vlan_macs in self.known_vlan_macs.items():
-                                                if vlan_id not in vlan_rules:
-                                                        vlan_macs_to_remove = self.known_vlan_macs[vlan_id]
-                                                else:
-                                                        vlan_macs_to_remove = list(set(self.known_vlan_macs[vlan_id]) - set(vlan_rules[vlan_id]))
-                                                vlan_if = self.parent.name + "." + vlan_id
-                                                for mac_to_remove in vlan_macs_to_remove:
-                                                        current_slave = self.get_slave_by_mac(mac_to_remove, self.parent.name, vlan_id = vlan_id)
-                                                        if not current_slave:
-                                                                continue
-                                                        self.logger.debug("Need to remove slave: %s of vlan id %s" % (current_slave, vlan_id))
-                                                        self.destroy_nic(mac_to_remove, self.parent.name, current_slave)
-                                                        self.known_vlan_macs[vlan_id] = list(set(self.known_vlan_macs[vlan_id]) - set([mac_to_remove]))
+					# Remove loop
+					for vlan_id, vlan_macs in self.known_vlan_macs.items():
+						if vlan_id not in vlan_rules:
+							vlan_macs_to_remove = self.known_vlan_macs[vlan_id]
+						else:
+							vlan_macs_to_remove = list(set(self.known_vlan_macs[vlan_id]) - set(vlan_rules[vlan_id]))
+							for mac in vlan_macs:
+								if self.get_slave_by_mac(mac, self.parent.name, vlan_id = vlan_id) is None:
+									vlan_macs_to_remove.append(mac)
+									self.logger.debug("Removing %s from macs of %s" % (mac, vlan_rules[vlan_id]))
+						for mac_to_remove in vlan_macs_to_remove:
+							current_slave = self.get_slave_by_mac(mac_to_remove, self.parent.name, vlan_id = vlan_id)
+							if current_slave is None:
+								if mac_to_remove in self.known_vlan_macs[vlan_id]:
+									self.logger.debug("Removing %s from macs of %s" % (mac_to_remove, vlan_id))
+									self.known_vlan_macs[vlan_id].remove(mac_to_remove)
+								continue
+							self.logger.debug("Need to remove slave: %s of vlan id %s" % (current_slave, vlan_id))
+							self.destroy_nic(mac_to_remove, self.parent.name, current_slave)
+							self.known_vlan_macs[vlan_id] = list(set(self.known_vlan_macs[vlan_id]) - set([mac_to_remove]))
 					self.logger.debug("Connected interface %s to ovs-br %s macs2vlan: %s." % (n, br, str(self.map_mac_2_vlan)))
 
 			self.add_to_scanned_list(n)
@@ -860,6 +874,7 @@ class VirtualNicObserver(NicObserver):
 		cmd = "/bin/echo %s > %s" % (new_mode, "/sys/class/net/" + slave + os.sep + "mode")
 
 		(rc, out) = commands.getstatusoutput(cmd)
+		time.sleep (1)
 		if rc:
 			self.logger.warning("cmd failed! (%s)" % cmd)
 			return rc
