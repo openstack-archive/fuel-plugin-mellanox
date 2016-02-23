@@ -50,6 +50,7 @@ class mellanox_openstack::compute_sriov (
     Package[$sriov_agent_package] ->
     Sriov_nic_agent_config<||> ~>
     Service[$sriov_agent_service]
+    ~> Service<| title == $nova::params::compute_service_name |>
 
   } elsif ( $mlnx_driver == 'eth_ipoib' ){
     class { 'mellanox_openstack::eswitchd' :

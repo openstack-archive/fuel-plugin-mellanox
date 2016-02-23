@@ -95,16 +95,14 @@ function set_modprobe_file () {
                  debug_level=1"
 
   TOTAL_VFS=$1
-  if is_vxlan_offloading_required; then
-    MLX4_CORE_STR="${MLX4_CORE_STR} log_num_mgm_entry_size=-1"
-  fi
   MLX4_CORE_STR="${MLX4_CORE_STR} port_type_array=${PORT_TYPE},${PORT_TYPE}"
   if [[ $TOTAL_VFS -gt 0 ]]; then
-    MLX4_CORE_STR="${MLX4_CORE_STR} num_vfs=${TOTAL_VFS}"
+    MLX4_CORE_STR="${MLX4_CORE_STR} num_vfs=${TOTAL_VFS},0,0"
     if [[ $PROBE_VFS -gt 0 ]]; then
-      MLX4_CORE_STR="${MLX4_CORE_STR} probe_vf=${TOTAL_VFS}"
+      MLX4_CORE_STR="${MLX4_CORE_STR} probe_vf=${TOTAL_VFS},0,0"
     fi
   fi
+  MLX4_CORE_STR="${MLX4_CORE_STR} log_num_mgm_entry_size=-1"
   echo ${MLX4_CORE_STR} > ${MLX4_CORE_FILE}
 
 }
