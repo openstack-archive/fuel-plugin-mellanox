@@ -1,52 +1,22 @@
 attributes:
-  metadata:
-    group: 'other'
-  notes:
-    type: "textarea"
-    label: "Important notes:"
-    weight: 5
-    extra_priority: null
-    value: |
-      To use Mellanox High Performance features,
-      you have to complete the following prerequisites prior to the deployment:
-      - For Ethernet deployment:
-           *   Configure the Switch ports to Ethernet mode.
-           *   Configure the desired VLANs for each port.
-      - For InfiniBand deployment:
-           *   Configure the Switch ports to InfiniBand mode.
-           *   Configure a Subnet Manager (SM) on the switch or on a node in the cluster,
-                as described in the User manual.
-           *   Reboot bootstrap nodes using the 'reboot_bootstrap_nodes' script, from
-                the Fuel master, in order to load eIPoIB hardware discovery support.
-      - After the interfaces discovery, perform the following:
-           *   Set the relevant networks to work over Mellanox interfaces, in the
-                interfaces configuration in the Nodes tab.
-           *   Run network verification, after configuring the desired network subnets
-                and VLAN segmentations.
-    description: "For more information: https://community.mellanox.com/docs/DOC-2374"
-  iser:
-    value: false
-    label: "iSER protocol for volumes (Cinder)"
-    description: "High Performance Block Storage: Cinder volumes over iSER protocol (iSCSI over RDMA) which use a dedicated Virtual Function for the storage network. This feature requires SR-IOV capabilities in the NIC, when deploying over Ethernet."
-    weight: 11
-    type: "checkbox"
-    restrictions:
-      - condition: "settings:storage.volumes_lvm.value != true or settings:common.libvirt_type.value != 'kvm'"
-        message: "For iSER support in Cinder, Cinder LVM over iSCSI should be enabled and hypervisor type should be KVM."
   sriov:
     value: false
-    label: "Neutron SR-IOV Mechanism driver"
-    weight: 60
+    label: "Support SR-IOV direct port creation in Neutron private VLAN networks"
+    weight: 11
     type: "checkbox"
-    description: "If selected, Neutron SRIOV mechanism driver will be configured, to enable SR-IOV capabilities."
+    description: |
+              If selected, a Neutron SR-IOV mechanism driver will be configured, to enable SR-IOV capabilities using Neutron direct port.
+              In case NEO SDN Mechanism driver is not used for private network VLAN provisioning:
+              In Ethernet mode, switch side ports has to be pre configured with the required VLAN range.
+              In Infinband mode, the Subnet Manager partitions.conf file has to include the private network converstions of VLAN to PKey.
     restrictions:
       - condition: "settings:common.libvirt_type.value != 'kvm' or not (cluster:net_provider == 'neutron' and networking_parameters:segmentation_type == 'vlan')"
-        message: "For Mellanox SR-IOV support in neutron, hypervisor type should be KVM and the environment networking should be based on Neutron with VLAN segmentation."
+        message: "For Mellanox SR-IOV support in Neutron, hypervisor type should be KVM and the environment networking should be based on Neutron with VLAN segmentation."
   num_of_vfs:
     value: "16"
     label: "Number of virtual NICs"
     description: "Note that one virtual function might be reserved to the storage network, in case of choosing iSER."
-    weight: 70
+    weight: 12
     type: "text"
     regex:
       source: "^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$"
@@ -54,12 +24,67 @@ attributes:
     restrictions:
       - condition: "settings:mellanox-plugin.sriov.value == false"
         message: "In order to change the number of virtual NICs, Neutron SR-IOV plugin should be checked."
+
+  mlnx_qos:
+    value: false
+    label: "Support quality of service over VLAN network ports"
+    description: |
+               If selected, Neutron "Quality of service" (QoS) will be enabled for VLAN networks and ports over Mellanox HCAs.
+               This feature is supported in Ethernet mode only.
+    weight: 30
+    type: "checkbox"
+    restrictions:
+      - condition: "settings:common.libvirt_type.value != 'kvm' or not (cluster:net_provider == 'neutron' and networking_parameters:segmentation_type == 'vlan')"
+        message: "For Mellanox QoS support in Neutron, hypervisor type should be KVM and the environment networking should be based on Neutron with VLAN segmentation."
+
+  use_mlnx_neo:
+    value: false
+    label: "Support NEO SDN controller auto VLAN Provisioning"
+    weight: 40
+    type: "checkbox"
+    description: |
+               If selected, Mellanox NEO Mechanism driver will be used in order to support Auto switch VLAN or SM Pkeys provisioning.
+    restrictions:
+      - condition: "settings:common.libvirt_type.value != 'kvm' or not (cluster:net_provider == 'neutron' and networking_parameters:segmentation_type == 'vlan')"
+        message: "For NEO SDN auto VLAN provisioning, hypervisor type should be KVM and the environment networking should be based on Neutron with VLAN segmentation."
+  mlnx_neo_ip:
+    value: ""
+    label: "NEO SDN controller IP"
+    weight: 41
+    type: "text"
+    regex:
+      source: '^(((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?))$'
+      error: "Invalid IP address"
+    restrictions:
+      - condition: "settings:mellanox-plugin.use_mlnx_neo.value == false"
+        message: "In order to insert NEO SDN Controller IP, Mellanox NEO auto VLAN provisioning has to be checked."
+
   vxlan_offloading:
     value: false
-    label: "VXLAN Offloading"
-    description: "By using Mellanox hardware, VXLAN offloading is achieved with better performance and significant CPU overhead reduction. "
-    weight: 11
+    label: "Support VXLAN Offloading"
+    description: |
+               If selected, Mellanox hardware will be used to achieve a better performance and significant CPU overhead reduction
+               using VxLAN traffic offloading. This feature is supported in Ethernet mode only.
+    weight: 50
     type: "checkbox"
     restrictions:
       - condition: "not (cluster:net_provider == 'neutron' and networking_parameters:segmentation_type == 'tun')"
         message: "For VXLAN offloading, network should be neutron with tunnling segmentation."
+
+  iser:
+    value: false
+    label: "iSER protocol for volumes (Cinder)"
+    description: |
+                  High Performance Block Storage: Cinder volumes over iSER protocol (iSCSI over RDMA).
+                  In Ethernet mode, a dedicated Virtual Function will be reserved for a storage endpoint, and the priority flow control
+                  has to be enabled on the switch side port.
+                  In Infiniband mode, the IPoIB parent interface of the network storage interface will be used as the storage endpoint.
+                        
+                        
+                  For more information about Mellanox NEO installation and usage: https://community.mellanox.com/docs/DOC-2155
+                  For more information about Mellanox Fuel 8.0 plugin configurations: https://community.mellanox.com/docs/DOC-2374
+    weight: 60
+    type: "checkbox"
+    restrictions:
+      - condition: "settings:storage.volumes_lvm.value != true or settings:common.libvirt_type.value != 'kvm'"
+        message: "For iSER support in Cinder, Cinder LVM over iSCSI should be enabled and hypervisor type should be KVM."
