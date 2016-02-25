@@ -2,13 +2,13 @@ class mellanox_openstack::agent (
     $physnet,
     $physifc,
 ) {
+    include nova::params
     include mellanox_openstack::params
 
     $package              = $::mellanox_openstack::params::neutron_mlnx_packages_compute
     $agent                = $::mellanox_openstack::params::agent_service
     $filters_dir          = $::mellanox_openstack::params::filters_dir
     $filters_file         = $::mellanox_openstack::params::filters_file
-    $compute_service_name = $::mellanox_openstack::params::compute_service_name
     $mlnx_agent_conf      = $::mellanox_openstack::params::mlnx_agent_conf
     $mlnx_agent_init_file = $::mellanox_openstack::params::mlnx_agent_init_file
 
@@ -33,7 +33,7 @@ class mellanox_openstack::agent (
         File <| title == '/etc/nova/nova.conf' |> ->
         File[$filters_dir] ->
         File[$filters_file] ~>
-        Service[$compute_service_name]
+        Service[$nova::params::compute_service_name]
     }
 
     file { $mlnx_agent_conf :
@@ -61,19 +61,12 @@ class mellanox_openstack::agent (
         hasrestart => true,
     }
 
-    service { $compute_service_name :
-        ensure     => running,
-        enable     => true,
-        hasstatus  => true,
-        hasrestart => true,
-    }
-
     Package[$package] ->
     File[$mlnx_agent_conf] ->
     Mellanox_agent_config <||> ~>
     Exec[fix_mlnx_agent_init] ~>
     Service[$agent] ~>
-    Service[$compute_service_name]
+    Service[$nova::params::compute_service_name]
 
     Package[$package] ~>
     Service[$agent]

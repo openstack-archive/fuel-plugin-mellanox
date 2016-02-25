@@ -20,10 +20,13 @@ class mellanox_openstack::compute_sriov (
   # configure pci_passthrough_whitelist nova compute
   if ($pci_passthrough_addresses) {
     nova_config { 'DEFAULT/pci_passthrough_whitelist':
-      value  => check_array_of_hash("${pci_passthrough_addresses}"),
+      value      => check_array_of_hash("${pci_passthrough_addresses}"),
     } ~>
     service { $nova::params::compute_service_name:
-      ensure => running
+      ensure     => running,
+      enable     => true,
+      hasstatus  => true,
+      hasrestart => true,
     }
   }
 
