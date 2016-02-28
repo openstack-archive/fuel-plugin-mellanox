@@ -145,7 +145,7 @@
 # Execute post_deployment manifest for each role
 - id: configure_mellanox_controller
   role: ['controller', 'primary-controller']
-  required_for: [post_deployment_end]
+  required_for: [configure_mlnx_iser_ib]
   requires: [print_stage_post_deployment]
   type: puppet
   parameters:
@@ -154,7 +154,7 @@
     timeout: 500
 - id: configure_mellanox_compute
   role: ['compute']
-  required_for: [post_deployment_end]
+  required_for: [configure_mlnx_iser_ib]
   requires: [print_stage_post_deployment]
   type: puppet
   parameters:
@@ -163,7 +163,7 @@
     timeout: 500
 - id: configure_mellanox_cinder
   role: ['cinder']
-  required_for: [post_deployment_end]
+  required_for: [configure_mlnx_iser_ib]
   requires: [print_stage_post_deployment]
   type: puppet
   parameters:
