@@ -3,6 +3,13 @@ $eswitch_vnic_type = 'hostdev'
 $eswitch_apply_profile_patch = 'True'
 $mechanism_drivers = 'openvswitch'
 
+# Configure QoS for ETH
+if ( $mlnx['driver'] == 'mlx4_en' and $mlnx['mlnx_qos'] ) {
+  class { 'mellanox_openstack::configure_qos' :
+    mlnx_sriov => $mlnx['sriov']
+  }
+}
+
 if ($mlnx['sriov']) {
   $pci_vendor_devices = generate ("/bin/bash", "-c", 'lspci -nn | grep -i Mellanox | grep -i virtual | awk \'{print $NF}\' | sort -u | tr -d \']\' | tr -d \'[\'')
   $agent_required = 'True'
