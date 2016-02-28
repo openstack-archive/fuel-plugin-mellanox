@@ -124,6 +124,15 @@
   parameters:
     cmd: ./vfio.sh
     timeout: 200
+# Enable QoS if required
+- id: configure_qos
+  role: '*'
+  required_for: [remove_blocking_iptable_roles]
+  requires: [validate_sriov]
+  type: shell
+  parameters:
+    cmd: ./configure_qos.sh configure
+    timeout: 100
 # This is a workaround: disable wrong rules in CentOS IBP #1458832.
 - id: remove_blocking_iptable_roles
   role: '*'
