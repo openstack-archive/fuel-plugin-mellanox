@@ -109,26 +109,26 @@
 # Check number of VFs
 - id: validate_sriov
   role: '*'
-  required_for: [modprobe_vfio]
+  required_for: [configure_qos]
   requires: [reboot_after_ofed]
   type: shell
   parameters:
     cmd: ./sriov.sh validate
     timeout: 200
-# Load required kmods for SR-IOV
-- id: modprobe_vfio
-  role: ['compute']
+# Enable QoS if required
+- id: configure_qos
+  role: '*'
   required_for: [remove_blocking_iptable_roles]
   requires: [validate_sriov]
   type: shell
   parameters:
-    cmd: ./vfio.sh
-    timeout: 200
+    cmd: ./configure_qos.sh configure
+    timeout: 100
 # This is a workaround: disable wrong rules in CentOS IBP #1458832.
 - id: remove_blocking_iptable_roles
   role: '*'
   required_for: [pre_deployment_end]
-  requires: [modprobe_vfio]
+  requires: [configure_qos]
   type: shell
   parameters:
     cmd: ./blocking_iptables_rules.sh
