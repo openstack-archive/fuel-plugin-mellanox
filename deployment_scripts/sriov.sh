@@ -111,6 +111,9 @@ function set_modprobe_file () {
     fi
   fi
   MLX4_CORE_STR="${MLX4_CORE_STR} log_num_mgm_entry_size=-1"
+  if [ $QOS == true ]; then
+    MLX4_CORE_STR="${MLX4_CORE_STR} enable_vfs_qos=1"
+  fi
   echo ${MLX4_CORE_STR} > ${MLX4_CORE_FILE}
 
 }
