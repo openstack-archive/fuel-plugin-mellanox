@@ -12,6 +12,7 @@ if ($mlnx['sriov']) {
     mechanism_drivers           => $mechanism_drivers,
     mlnx_driver                 => $mlnx['driver'],
     mlnx_sriov                  => $mlnx['sriov'],
+    mlnx_qos                    => $mlnx['mlnx_qos'],
     pci_vendor_devices          => $pci_vendor_devices,
     agent_required              => $agent_required,
   }

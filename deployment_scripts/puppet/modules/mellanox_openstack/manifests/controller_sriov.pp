@@ -4,6 +4,7 @@ class mellanox_openstack::controller_sriov (
   $mechanism_drivers,
   $mlnx_driver,
   $mlnx_sriov,
+  $mlnx_qos,
   $pci_vendor_devices,
   $agent_required,
 ) {
@@ -37,6 +38,15 @@ class mellanox_openstack::controller_sriov (
       'eswitch/vnic_type':                      value => $eswitch_vnic_type;
       'eswitch/apply_profile_patch':            value => $eswitch_apply_profile_patch;
       'ml2/mechanism_drivers':                  value => "${ml2_extra_mechanism_driver},${mechanism_drivers}";
+    }
+  }
+
+  if ( $mlnx_qos == 'true' ){
+    neutron_plugin_ml2 {
+      'ml2/extension_drivers':                    value => $mlnx_qos;
+    }
+    neutron_config {
+      'DEFAULT/service_plugins':                  value => join(['neutron.services.qos.qos_plugin:QoSPlugin',]),
     }
   }
 

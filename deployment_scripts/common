@@ -81,3 +81,4 @@ readonly ISER=`get_mlnx_param iser`
 readonly MAX_VFS=64
 readonly MIN_VFS=1
 readonly VXLAN_OFFLOADING=`get_mlnx_param vxlan_offloading`
+readonly QOS=`get_mlnx_param mlnx_qos`
