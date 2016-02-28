@@ -36,6 +36,10 @@ if [ $DISTRO == 'ubuntu' ] && [ $DRIVER == 'eth_ipoib' ]; then
 
   service openibd restart && service openvswitch-switch restart
 
+  if [[ $ROLE == compute ]] && [ -f /etc/init.d/nova-compute ]; then
+    service nova-compute restart
+  fi
+
   if [ $tgt_locks -ne 0 ];then
     service tgt start
   fi
