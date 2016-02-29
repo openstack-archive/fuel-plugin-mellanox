@@ -14,6 +14,7 @@ if ($mlnx['sriov']) {
     mlnx_sriov                  => $mlnx['sriov'],
     pci_vendor_devices          => $pci_vendor_devices,
     agent_required              => $agent_required,
+    use_mlnx_neo                => $mlnx['use_mlnx_neo']
   }
 }
 # Configure broadcast dnsmasq for IB PV
