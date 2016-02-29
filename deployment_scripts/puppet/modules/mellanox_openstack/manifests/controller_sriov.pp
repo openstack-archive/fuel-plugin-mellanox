@@ -6,6 +6,7 @@ class mellanox_openstack::controller_sriov (
   $mlnx_sriov,
   $pci_vendor_devices,
   $agent_required,
+  $use_mlnx_neo
 ) {
 
   include neutron::params
@@ -23,8 +24,14 @@ class mellanox_openstack::controller_sriov (
     value => 'RetryFilter, AvailabilityZoneFilter, RamFilter, ComputeFilter, ComputeCapabilitiesFilter, ImagePropertiesFilter, PciPassthroughFilter'
   }
 
+  if $use_mlnx_neo{
+    $sdn_extra_mechanism_driver='sdnmechdriver,'
+  }else{
+    $sdn_extra_mechanism_driver=''
+  }
+
   if ( $mlnx_driver == 'mlx4_en' ){
-    $ml2_extra_mechanism_driver = 'sriovnicswitch'
+    $ml2_extra_mechanism_driver = "${sdn_extra_mechanism_driver}sriovnicswitch"
     neutron_plugin_ml2 {
       'ml2/mechanism_drivers':                  value => "${ml2_extra_mechanism_driver},${mechanism_drivers}";
       'ml2_sriov/supported_pci_vendor_devs':    value => $pci_vendor_devices;
@@ -32,7 +39,7 @@ class mellanox_openstack::controller_sriov (
     }
   }
   else {
-    $ml2_extra_mechanism_driver = 'mlnx'
+    $ml2_extra_mechanism_driver = "${sdn_extra_mechanism_driver}mlnx"
     neutron_plugin_ml2 {
       'eswitch/vnic_type':                      value => $eswitch_vnic_type;
       'eswitch/apply_profile_patch':            value => $eswitch_apply_profile_patch;
