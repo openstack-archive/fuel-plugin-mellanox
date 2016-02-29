@@ -56,8 +56,11 @@ function set_modprobe_file () {
   MLX4_CORE_STR="options mlx4_core
                  enable_64b_cqe_eqe=0
                  log_num_mgm_entry_size=-1
-                 debug_level=1
                  port_type_array=${PORT_TYPE},${PORT_TYPE}"
+  if [[ $DEBUG == "true" ]];then
+    MLX4_CORE_STR="${MLX4_CORE_STR} debug_level=1"
+  fi
+
   echo ${MLX4_CORE_STR} > ${MLX4_CORE_FILE}
 }
 

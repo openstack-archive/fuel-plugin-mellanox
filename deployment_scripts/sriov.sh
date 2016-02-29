@@ -35,10 +35,8 @@ function get_port_type() {
 }
 
 function get_num_probe_vfs () {
-  if [ $SRIOV == true ] && [ $DRIVER == 'mlx4_en' ]; then
+  if [ $DRIVER == 'mlx4_en' ]; then
     probe_vfs=`calculate_total_vfs`
-  elif [ $ISER == true ] && [ $DRIVER == 'mlx4_en' ]; then
-    probe_vfs=1
   else
     probe_vfs=0
   fi
@@ -55,14 +53,17 @@ function calculate_total_vfs () {
     return 1
   fi
   num_of_vfs=0
+
   # SR-IOV is enabled, the given number of VFs is used
   # iSER is also enabled, the iSER VF is among the given SR-IOV VFs
-  if [ $SRIOV == true ]; then
+  if [ $SRIOV == true ] && [ $ROLE == compute ]; then
     num_of_vfs=${USER_NUM_OF_VFS}
+
   # SR-IOV is disabled with iSER enabled, then use only the storage VF
-  elif [ $ISER == true ]; then
-    num_of_vfs=`get_num_probe_vfs`
+  elif [ $ISER == true ] && [ $DRIVER == 'mlx4_en' ]; then
+    num_of_vfs=1
   fi
+
   # Enforce even num of vfs
   if [ $((${num_of_vfs} % 2)) -eq 1 ]; then
     let num_of_vfs="${num_of_vfs} + 1" # number of vfs is odd and <= 64, then +1 is legal
@@ -73,7 +74,7 @@ function calculate_total_vfs () {
 # Reduce mac caching time since VF is used for iSER with non permanent MAC
 function reduce_mac_caching_timeout () {
   probes=`get_num_probe_vfs`
-  if [ "$probes" == "1" ]; then
+  if [ $probes -ge 1 ]; then
     timeout=$VF_MAC_CACHING_TIMEOUT
   else
     timeout=$VF_MAC_CACHING_TIMEOUT_DEF
@@ -91,8 +92,10 @@ function set_modprobe_file () {
   MLX4_CORE_FILE="/etc/modprobe.d/mlx4_core.conf"
   PORT_TYPE=`get_port_type`
   MLX4_CORE_STR="options mlx4_core
-                 enable_64b_cqe_eqe=0
-                 debug_level=1"
+                 enable_64b_cqe_eqe=0"
+  if [[ $DEBUG == "true" ]];then
+    MLX4_CORE_STR="${MLX4_CORE_STR} debug_level=1"
+  fi
 
   TOTAL_VFS=$1
   MLX4_CORE_STR="${MLX4_CORE_STR} port_type_array=${PORT_TYPE},${PORT_TYPE}"
