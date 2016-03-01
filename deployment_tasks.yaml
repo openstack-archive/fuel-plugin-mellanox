@@ -109,26 +109,17 @@
 # Check number of VFs
 - id: validate_sriov
   role: '*'
-  required_for: [modprobe_vfio]
+  required_for: [remove_blocking_iptable_roles]
   requires: [reboot_after_ofed]
   type: shell
   parameters:
     cmd: ./sriov.sh validate
     timeout: 200
-# Load required kmods for SR-IOV
-- id: modprobe_vfio
-  role: ['compute']
-  required_for: [remove_blocking_iptable_roles]
-  requires: [validate_sriov]
-  type: shell
-  parameters:
-    cmd: ./vfio.sh
-    timeout: 200
 # This is a workaround: disable wrong rules in CentOS IBP #1458832.
 - id: remove_blocking_iptable_roles
   role: '*'
   required_for: [pre_deployment_end]
-  requires: [modprobe_vfio]
+  requires: [validate_sriov]
   type: shell
   parameters:
     cmd: ./blocking_iptables_rules.sh
@@ -174,19 +165,28 @@
 # if exists
 - id: configure_mlnx_iser_ib
   role: '*'
-  required_for: [move_ib_interfaces_to_persistent]
+  required_for: [set_apparmor]
   requires: [post_deployment_start]
   type: puppet
   parameters:
     puppet_manifest: puppet/manifests/configure_iser_child.pp
     puppet_modules: puppet/modules:/etc/puppet/modules
     timeout: 200
+# Add required exceptions for SR-IOV
+- id: set_apparmor
+  role: ['compute']
+  required_for: [move_ib_interfaces_to_persistent]
+  requires: [configure_mlnx_iser_ib]
+  type: shell
+  parameters:
+    cmd: ./set_apparmor.sh
+    timeout: 200
 # Move Ubuntu iSER conigurations to /etc/network/interfaces
 # For MLNX_OFED drivers
 - id: move_ib_interfaces_to_persistent
   role: '*'
   required_for: [configure_mellanox_neo]
-  requires: [configure_mlnx_iser_ib]
+  requires: [set_apparmor]
   type: shell
   parameters:
     cmd: ./move_ubuntu_ib_interfaces_conf.sh
