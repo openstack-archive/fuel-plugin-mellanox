@@ -1,0 +1,10 @@
+Code-Review+1: Noam Angel <noama@mellanox.com>
+Code-Review+2: Aviram Bar-Haim <aviramb@mellanox.com>
+Workflow+1: Aviram Bar-Haim <aviramb@mellanox.com>
+Code-Review+1: Rawan Herzallah <rherzallah@asaltech.com>
+Verified+2: Jenkins
+Submitted-by: Jenkins
+Submitted-at: Tue, 01 Mar 2016 11:37:54 +0000
+Reviewed-on: https://review.openstack.org/284860
+Project: openstack/fuel-plugin-mellanox
+Branch: refs/heads/master
