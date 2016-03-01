@@ -174,19 +174,28 @@
 # if exists
 - id: configure_mlnx_iser_ib
   role: '*'
-  required_for: [move_ib_interfaces_to_persistent]
+  required_for: [set_apparmor]
   requires: [post_deployment_start]
   type: puppet
   parameters:
     puppet_manifest: puppet/manifests/configure_iser_child.pp
     puppet_modules: puppet/modules:/etc/puppet/modules
     timeout: 200
+# Add required exceptions for SR-IOV
+- id: set_apparmor
+  role: ['compute']
+  required_for: [move_ib_interfaces_to_persistent]
+  requires: [configure_mlnx_iser_ib]
+  type: shell
+  parameters:
+    cmd: ./set_apparmor.sh
+    timeout: 200
 # Move Ubuntu iSER conigurations to /etc/network/interfaces
 # For MLNX_OFED drivers
 - id: move_ib_interfaces_to_persistent
   role: '*'
   required_for: [configure_mellanox_neo]
-  requires: [configure_mlnx_iser_ib]
+  requires: [set_apparmor]
   type: shell
   parameters:
     cmd: ./move_ubuntu_ib_interfaces_conf.sh
