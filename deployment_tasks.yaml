@@ -185,17 +185,28 @@
 # For MLNX_OFED drivers
 - id: move_ib_interfaces_to_persistent
   role: '*'
-  required_for: [cp_sriov_user_scripts]
+  required_for: [configure_mellanox_neo]
   requires: [configure_mlnx_iser_ib]
   type: shell
   parameters:
     cmd: ./move_ubuntu_ib_interfaces_conf.sh
     timeout: 120
+# Configure Mellanox NEO SDN controller for auto VLAN
+# provisioning
+- id: configure_mellanox_neo
+  role: '*'
+  required_for: [cp_sriov_user_scripts]
+  requires: [move_ib_interfaces_to_persistent]
+  type: puppet
+  parameters:
+    puppet_manifest: puppet/manifests/configure_mlnx_neo.pp
+    puppet_modules: puppet/modules:/etc/puppet/modules
+    timeout: 500
 # Copy SR-IOV user scripts to controllers
 - id: cp_sriov_user_scripts
   role: ['controller', 'primary-controller']
   required_for: [post_deployment_end]
-  requires: [move_ib_interfaces_to_persistent]
+  requires: [configure_mellanox_neo]
   type: shell
   parameters:
     cmd: cp -r ./user_scripts/* /sbin/
