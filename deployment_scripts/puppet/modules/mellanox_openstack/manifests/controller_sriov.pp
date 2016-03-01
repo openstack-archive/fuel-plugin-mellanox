@@ -57,12 +57,14 @@ class mellanox_openstack::controller_sriov (
       value     => 'True',
     }
 
-    service { $dhcp_agent :
-      ensure     =>  running,
-      enable     =>  true,
-      provider   =>  pacemaker,
-      subscribe  =>  [Neutron_dhcp_agent_config['DEFAULT/dhcp_driver'],
-                      Neutron_dhcp_agent_config['DEFAULT/dhcp_broadcast_reply']],
+    if (hiera('role') == 'primary-controller') {
+      service { $dhcp_agent :
+        ensure     =>  running,
+        enable     =>  true,
+        provider   =>  pacemaker,
+        subscribe  =>  [Neutron_dhcp_agent_config['DEFAULT/dhcp_driver'],
+                        Neutron_dhcp_agent_config['DEFAULT/dhcp_broadcast_reply']],
+      }
     }
   }
 }

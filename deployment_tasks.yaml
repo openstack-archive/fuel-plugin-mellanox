@@ -151,7 +151,7 @@
   parameters:
     puppet_manifest: puppet/manifests/controller.pp
     puppet_modules: puppet/modules:/etc/puppet/modules
-    timeout: 500
+    timeout: 2000
 - id: configure_mellanox_compute
   role: ['compute']
   required_for: [post_deployment_end]
