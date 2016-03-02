@@ -87,5 +87,5 @@ readonly ISER=`get_mlnx_param iser`
 readonly MAX_VFS=128
 readonly MIN_VFS=1
 readonly VXLAN_OFFLOADING=`get_mlnx_param vxlan_offloading`
-readonly ROLE=`get_param role`
+readonly ROLE=`get_param roles`
 readonly DEBUG=`get_param debug`

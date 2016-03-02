@@ -36,7 +36,7 @@ if [ $DISTRO == 'ubuntu' ] && [ $DRIVER == 'eth_ipoib' ]; then
 
   service openibd restart && service openvswitch-switch restart
 
-  if [[ $ROLE == compute ]] && [ -f /etc/init.d/nova-compute ]; then
+  if [[ $ROLE == *compute* ]] && [ -f /etc/init.d/nova-compute ]; then
     service nova-compute restart
   fi
 
