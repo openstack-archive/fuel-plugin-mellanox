@@ -71,7 +71,7 @@ rpm_files="cirros-testvm-mellanox-0.3.2-1.mira3.x86_64.rpm
 old_debs="${PLUGIN_DIR}/repositories/ubuntu/*.deb"
 deb_files="cirros-testvm-mellanox_0.3.2-ubuntu3_amd64.deb
            cirros-testvm-mellanox-ib_0.3.2-9_amd64.deb
-           eswitchd_1.0.0-14_amd64.deb
+           eswitchd_1.0.0-16_amd64.deb
            mlnx-ofed-fuel_3.1-1.5.7_amd64.deb
            mlnx-ofed-kernel-dkms_3.1-OFED.3.1.1.0.3.1.g9032737_all.deb
            mlnx-ofed-kernel-utils_3.1-OFED.3.1.1.0.3.1.g9032737_amd64.deb
