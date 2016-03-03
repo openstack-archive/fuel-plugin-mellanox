@@ -1,0 +1,9 @@
+Code-Review+1: Roman Podoliaka <rpodolyaka@mirantis.com>
+Code-Review+2: Aviram Bar-Haim <aviramb@mellanox.com>
+Workflow+1: Aviram Bar-Haim <aviramb@mellanox.com>
+Verified+2: Jenkins
+Submitted-by: Jenkins
+Submitted-at: Thu, 03 Mar 2016 17:27:49 +0000
+Reviewed-on: https://review.openstack.org/286769
+Project: openstack/fuel-plugin-mellanox
+Branch: refs/heads/master
