@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright 2015 Mellanox Technologies, Ltd
+# Copyright 2016 Mellanox Technologies, Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -26,6 +26,15 @@ if [ $DISTRO == 'ubuntu' ] && [ $DRIVER == 'eth_ipoib' ]; then
     cat /etc/network/interfaces.d/ifcfg-ib* >> /etc/network/interfaces
     \rm -f /etc/network/interfaces.d/ifcfg-ib0*
   fi
+fi
+
+# Set correct VF number in multi role computes
+# (e.g. cinder & compute)
+if ([[ $ROLES == *compute* ]] && [[ ! $ROLES == "compute" ]]) \
+    && [ $SRIOV == true ] ; then
+
+  # Update VFs
+  ./sriov.sh configure
 
   # Kill tgt daemons if exists
   tgt_locks=`find /var/run/ -name tgtd* | wc -l`
@@ -36,11 +45,11 @@ if [ $DISTRO == 'ubuntu' ] && [ $DRIVER == 'eth_ipoib' ]; then
 
   service openibd restart && service openvswitch-switch restart
 
-  if [[ $ROLE == *compute* ]] && [ -f /etc/init.d/nova-compute ]; then
-    service nova-compute restart
-  fi
-
   if [ $tgt_locks -ne 0 ];then
     service tgt start
   fi
+
+  # Verify VFs
+  ./sriov.sh validate
+
 fi

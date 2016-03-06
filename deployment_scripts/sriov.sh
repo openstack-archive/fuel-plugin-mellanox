@@ -1,5 +1,5 @@
 #!/bin/bash -x
-# Copyright 2015 Mellanox Technologies, Ltd
+# Copyright 2016 Mellanox Technologies, Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -54,19 +54,25 @@ function calculate_total_vfs () {
   fi
   num_of_vfs=0
 
-  # SR-IOV is enabled, the given number of VFs is used
-  # iSER is also enabled, the iSER VF is among the given SR-IOV VFs
-  if [ $SRIOV == true ] && [[ $ROLE == *compute* ]]; then
-    num_of_vfs=${USER_NUM_OF_VFS}
+  # Set Compute VFs storage network
+  if [ $SRIOV == true ]; then
 
-  # SR-IOV is disabled with iSER enabled, then use only the storage VF
-  elif [ $ISER == true ] && [ $DRIVER == 'mlx4_en' ]; then
+    # If ROLES not set and not controller or compute
+    if ([ -z $ROLES ] && [[ ! $ROLE == *controller* ]]) || \
+       ([ $ROLE == compute ] || [[ $ROLES == *compute* ]]); then
+      num_of_vfs=${USER_NUM_OF_VFS}
+    fi
+  fi
+
+  # Set Ethernet RDMA storage network
+  if [ $ISER == true ] && [ $DRIVER == 'mlx4_en' ] \
+     && [ $num_of_vfs -eq 0 ]; then
     num_of_vfs=1
   fi
 
   # Enforce even num of vfs
   if [ $((${num_of_vfs} % 2)) -eq 1 ]; then
-    let num_of_vfs="${num_of_vfs} + 1" # number of vfs is odd and <= 64, then +1 is legal
+    let num_of_vfs="${num_of_vfs} + 1"
   fi
   echo ${num_of_vfs}
 }
