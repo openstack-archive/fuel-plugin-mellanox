@@ -27,6 +27,17 @@ if [ $DISTRO == 'ubuntu' ] && [ $DRIVER == 'eth_ipoib' ]; then
     \rm -f /etc/network/interfaces.d/ifcfg-ib0*
   fi
 
+  # Set Buffers size
+  if [ -f /etc/modprobe.d/ib_ipoib.conf ];then
+    sed -i s/^.*queue_size.*$//g /etc/modprobe.d/ib_ipoib.conf
+  fi
+  if [[ $ROLE == *controller* ]];then
+    buffer_size=32
+  else
+    buffer_size=128
+  fi
+  echo "options ib_ipoib recv_queue_size=$buffer_size send_queue_size=$buffer_size" > /etc/modprobe.d/ipoib.conf
+
   # Kill tgt daemons if exists
   tgt_locks=`find /var/run/ -name tgtd* | wc -l`
   if [ $tgt_locks -ne 0 ];then
