@@ -56,6 +56,7 @@ function calculate_total_vfs () {
 
   # SR-IOV is enabled, the given number of VFs is used
   # iSER is also enabled, the iSER VF is among the given SR-IOV VFs
+  logger_print info "role is ${ROLE}"
   if [ $SRIOV == true ] && [[ $ROLE == *compute* ]]; then
     num_of_vfs=${USER_NUM_OF_VFS}
 

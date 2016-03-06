@@ -7,8 +7,8 @@ class mellanox_openstack::configure_iser_child (
     ipaddr   => none,
     method   => static
   } ~>
-  exec { 'refresh-iser-parent':
-    command     => "/sbin/ifdown $iser_parent ; /sbin/ifup $iser_parent",
+  exec { 'flush-iser-parent':
+    command     => "/sbin/ip addr flush dev $iser_parent",
     refreshonly => true,
   } ->
   l23_stored_config { $iser_child:

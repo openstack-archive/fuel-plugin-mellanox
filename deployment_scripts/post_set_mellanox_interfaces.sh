@@ -27,6 +27,19 @@ if [ $DISTRO == 'ubuntu' ] && [ $DRIVER == 'eth_ipoib' ]; then
     \rm -f /etc/network/interfaces.d/ifcfg-ib0*
   fi
 
+  # Increase non controller IB buffers
+  echo "options ib_ipoib recv_queue_size=128 send_queue_size=128" > /etc/modprobe.d/ipoib.conf
+fi
+
+# Set correct VF number
+if [[ ! $ROLE == *controller* ]] \
+  && ([ $SRIOV == true ] || [ $DRIVER == 'eth_ipoib' ]); then
+
+  if [ $SRIOV == true ]; then
+    # Update VFs
+    ./sriov.sh configure
+  fi
+
   # Kill tgt daemons if exists
   tgt_locks=`find /var/run/ -name tgtd* | wc -l`
   if [ $tgt_locks -ne 0 ];then
@@ -35,10 +48,6 @@ if [ $DISTRO == 'ubuntu' ] && [ $DRIVER == 'eth_ipoib' ]; then
   fi
 
   service openibd restart && service openvswitch-switch restart
-
-  if [[ $ROLE == *compute* ]] && [ -f /etc/init.d/nova-compute ]; then
-    service nova-compute restart
-  fi
 
   if [ $tgt_locks -ne 0 ];then
     service tgt start
