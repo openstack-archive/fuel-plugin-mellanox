@@ -14,7 +14,7 @@ class mellanox_openstack::compute_sriov (
   $libvirt_service_name = 'libvirtd'
   $libvirt_package_name = $nova::params::libvirt_package_name
 
-  $path_to_generate_pci_script = generate ("/bin/bash", "-c", 'echo /etc/fuel/plugins/mellanox-plugin-*.0/generate_pci_passthrough_whitelist.py | tr -d \'\n \' ')
+  $path_to_generate_pci_script = generate ("/bin/bash", "-c", 'echo /etc/fuel/plugins/mellanox-plugin-*/generate_pci_passthrough_whitelist.py | tr -d \'\n \' ')
   $pci_passthrough_addresses = generate ("/usr/bin/python", $path_to_generate_pci_script, $exclude_vf, $physnet, $physifc)
 
   # configure pci_passthrough_whitelist nova compute

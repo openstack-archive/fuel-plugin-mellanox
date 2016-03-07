@@ -3,8 +3,10 @@
 import yaml
 import os
 import time
+import subprocess
+import sys
 
-plugin = "mellanox-plugin-2.0"
+plugin = subprocess.Popen("echo /var/www/nailgun/plugins/mellanox-plugin-*/ | tr '/' '\n' | grep mellanox-plugin | tr -d '\n' ", shell=True, stdout=subprocess.PIPE).stdout.read()
 plugin_uri = "http://127.0.0.1:8080/plugins/%s/repositories/ubuntu/" % plugin
 current_time = time.strftime("%d_%m_%y_%H_%M")
 
