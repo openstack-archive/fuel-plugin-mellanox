@@ -1,0 +1,9 @@
+Code-Review+1: Lenny Verkhovsky <lennyb@mellanox.com>
+Code-Review+2: Aviram Bar-Haim <aviramb@mellanox.com>
+Workflow+1: Aviram Bar-Haim <aviramb@mellanox.com>
+Verified+2: Jenkins
+Submitted-by: Jenkins
+Submitted-at: Tue, 08 Mar 2016 13:03:44 +0000
+Reviewed-on: https://review.openstack.org/289375
+Project: openstack/fuel-plugin-mellanox
+Branch: refs/heads/master
