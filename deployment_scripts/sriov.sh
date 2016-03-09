@@ -152,7 +152,7 @@ function burn_vfs_in_fw () {
   # required for mlxconfig to discover mlnx devices
   service openibd start &>/dev/null
   service mst start &>/dev/null
-  devices=$(mst status | grep pciconf | awk '{print $1}')
+  devices=$(mst status -v | grep ConnectX3| grep pciconf | awk '{print $2}')
   for dev in $devices; do
     logger_print debug "device=$dev"
     mlxconfig -d $dev q | grep SRIOV | awk '{print $2}' | grep $SRIOV_ENABLED_FLAG  &>/dev/null
