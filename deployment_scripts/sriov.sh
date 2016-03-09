@@ -152,7 +152,7 @@ function burn_vfs_in_fw () {
   # required for mlxconfig to discover mlnx devices
   service openibd start &>/dev/null
   service mst start &>/dev/null
-  devices=$(mst status | grep pciconf | awk '{print $1}')
+  devices=$(mst status -v | grep $CX| grep pciconf | awk '{print $2}')
   for dev in $devices; do
     logger_print debug "device=$dev"
     mlxconfig -d $dev q | grep SRIOV | awk '{print $2}' | grep $SRIOV_ENABLED_FLAG  &>/dev/null
@@ -165,6 +165,7 @@ function burn_vfs_in_fw () {
     fi
     if [[ ! "$total_vfs" == "$current_num_of_vfs" ]] 2>/dev/null; then
       logger_print debug "Current allowed number of VFs is ${current_num_of_vfs}, required number is ${total_vfs}"
+      logger_print debug "Trying mlxconfig -y -d ${dev} s SRIOV_EN=1 NUM_OF_VFS=${total_vfs}"
       mlxconfig -y -d $dev s SRIOV_EN=1 NUM_OF_VFS=$total_vfs 2>&1 >/dev/null
       if [ $? -ne 0 ]; then
         logger_print error "Failed changing number of VFs in FW for HCA ${dev}"
