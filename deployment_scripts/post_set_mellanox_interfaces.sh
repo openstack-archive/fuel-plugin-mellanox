@@ -28,9 +28,8 @@ if [ $DISTRO == 'ubuntu' ] && [ $DRIVER == 'eth_ipoib' ]; then
   fi
 fi
 
-# Set correct VF number in multi role computes
-# (e.g. cinder & compute)
-if ([[ $ROLES == *compute* ]] && [[ ! $ROLES == "compute" ]]) \
+# Set correct VF number for non Controller / single role computes
+if ([[ ! $ROLES == *controller* ]] && [[ ! $ROLES == "compute" ]]) \
     && [ $SRIOV == true ] ; then
 
   # Update VFs
