@@ -1,5 +1,5 @@
 #!/usr/bin/python
-# Copyright 2015 Mellanox Technologies, Ltd
+# Copyright 2016 Mellanox Technologies, Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -213,7 +213,8 @@ class MellanoxSettings(object):
         mlnx_interfaces = cls.mlnx_interfaces_section
         drivers = list()
         for network_type, ifc_dict in mlnx_interfaces.iteritems():
-            if ifc_dict['driver'] in MLNX_DRIVERS_LIST:
+            if 'driver' in ifc_dict and \
+                ifc_dict['driver'] in MLNX_DRIVERS_LIST:
                   drivers.append(ifc_dict['driver'])
         return list(set(drivers))
 
@@ -305,32 +306,89 @@ class MellanoxSettings(object):
     @classmethod
     def get_mlnx_interfaces_section(cls):
             transformations = cls.data['network_scheme']['transformations']
-            in_keys = ['bridge', 'interface', 'vlan', 'driver']
-            out_keys = ['management', 'storage', 'private', 'public' , 'admin']
+            interfaces = cls.data['network_scheme']['interfaces']
+            in_keys = ['bridge',
+                       'interface',
+                       'vlan',
+                       'driver']
+            out_keys = ['management',
+                        'storage',
+                        'private',
+                        'public',
+                        'admin',
+                        'baremetal']
             dict_of_interfaces = dict((h, dict()) for h in out_keys)
             for transformation in transformations:
-                if transformation['action'] == 'add-port':
-                  if transformation['bridge'] == 'br-fw-admin':
-                                network_type = 'admin'
-                  elif transformation['bridge'] == 'br-ex':
-                                network_type = 'public'
-                  elif transformation['bridge'] == 'br-aux' or transformation['bridge'] == 'br-mesh':
-                                network_type = 'private'
-                  elif transformation['bridge'] == 'br-mgmt':
-                                network_type = 'management'
-                  elif transformation['bridge'] == 'br-storage':
-                                network_type = 'storage'
+                if transformation['action'] == 'add-bond':
+                    # Init bonds on the first bond
+                    if 'bonds' not in cls.data:
+                        cls.data['bonds'] = {}
 
-                  mlnx_interfaces = dict((h, None) for h in in_keys)
-                  mlnx_interfaces['bridge'] = transformation['bridge']
-                  iface_split = transformation['name'].split('.')
-                  if len(iface_split)==1:
-                      iface_split.append(str(1))
-                  interface, vlan = iface_split
-                  mlnx_interfaces['interface'] = interface
-                  mlnx_interfaces['vlan'] = vlan
-                  mlnx_interfaces['driver'] = cls.data['network_scheme']['interfaces'][interface]['vendor_specific']['driver']
-                  dict_of_interfaces[network_type]=mlnx_interfaces
+                    # Init bond assumptions
+                    all_drivers_equal = True
+                    first = transformation['interfaces'][0]
+                    driver = interfaces[first]['vendor_specific']['driver']
+
+                    # Check if all bond drivers are the same
+                    for interface in transformation['interfaces']:
+                        new_driver = \
+                            interfaces[interface]['vendor_specific']['driver']
+                        if new_driver != driver:
+                            all_drivers_equal = False
+
+                    if all_drivers_equal:
+                        bond_driver = driver
+                    else:
+                        bond_driver = None
+
+                    cls.data['bonds'][transformation['name']] = \
+                        {'interfaces' : transformation['interfaces'],
+                         'driver'     : bond_driver}
+
+            for transformation in transformations:
+                if transformation['action'] == 'add-port' or \
+                    transformation['action'] == 'add-bond':
+                    if transformation['bridge'] == 'br-fw-admin':
+                        network_type = 'admin'
+                    elif transformation['bridge'] == 'br-ex':
+                        network_type = 'public'
+                    elif transformation['bridge'] == 'br-aux' or \
+                        transformation['bridge'] == 'br-mesh':
+                        network_type = 'private'
+                    elif transformation['bridge'] == 'br-mgmt':
+                        network_type = 'management'
+                    elif transformation['bridge'] == 'br-storage':
+                        network_type = 'storage'
+                    elif transformation['bridge'] == 'br-baremetal':
+                        network_type = 'baremetal'
+
+                    mlnx_interfaces = dict((h, None) for h in in_keys)
+                    mlnx_interfaces['bridge'] = transformation['bridge']
+
+                    # Split to iface name and VLAN
+                    iface_split = transformation['name'].split('.')
+                    if len(iface_split)==1:
+                        iface_split.append(str(1))
+                    interface, vlan = iface_split
+                    mlnx_interfaces['interface'] = interface
+                    mlnx_interfaces['vlan'] = vlan
+
+                    # If bond
+                    if 'bonds' in cls.data and interface in cls.data['bonds']:
+                        mlnx_interfaces['driver'] = \
+                            cls.data['bonds'][interface]['driver']
+                        if network_type == 'private':
+
+                            # Assign SR-IOV to the first port only
+                            mlnx_interfaces['interface'] = \
+                                cls.data['bonds'][interface]['interfaces'][0]
+                        else:
+                            mlnx_interfaces['interface'] = \
+                                cls.data['bonds'][interface]['interfaces']
+                    else: # Not a bond
+                        mlnx_interfaces['driver'] = \
+                            interfaces[interface]['vendor_specific']['driver']
+                    dict_of_interfaces[network_type] = mlnx_interfaces
             return dict_of_interfaces
 
 def main():
