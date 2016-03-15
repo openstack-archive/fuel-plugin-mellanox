@@ -25,7 +25,7 @@ MLNX_SECTION = 'mellanox-plugin'
 SETTINGS_FILE = '/etc/astute.yaml'
 PLUGIN_OVERRIDE_FILE = '/etc/hiera/override/plugins.yaml'
 MLNX_DRIVERS_LIST = ('mlx4_en', 'eth_ipoib')
-ISER_IFC_NAME = 'eth_iser0'
+ISER_IFC_NAME = 'mlnx_iser0'
 LOG_FILE = '/var/log/mellanox-plugin.log'
 
 class MellanoxSettingsException(Exception):
@@ -152,7 +152,7 @@ class MellanoxSettings(object):
         storage_vlan = mlnx.get('storage_vlan')
         storage_parent = cls.get_interface_by_network('storage')
         if storage_vlan and mlnx['driver'] == 'mlx4_en': # Use VLAN dev
-            vlan_name = "{0}{1}".format('vlan', storage_vlan)
+            vlan_name = "{0}.{1}".format(ISER_IFC_NAME, storage_vlan)
             # Set storage rule to iSER interface vlan interface
             cls.data['network_scheme']['roles']['storage'] = vlan_name
             # Set iSER interface vlan interface
