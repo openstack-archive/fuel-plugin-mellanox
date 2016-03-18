@@ -140,13 +140,12 @@ class MellanoxSettings(object):
         transformations = cls.data['network_scheme']['transformations']
         mlnx = cls.get_mlnx_section()
 
-        transformations.remove({
-            'action': 'add-br',
-            'name': 'br-storage'
-        })
-        for transforamtion in transformations:
-            if ('bridges' in transforamtion) and ('br-storage' in transforamtion['bridges']):
-                transformations.remove(transforamtion)
+        for transformation in transformations:
+            if ('bridges' in transformation) and ('br-storage' in transformation['bridges']):
+                transformations.remove(transformation)
+            elif ('name' in transformation) and ('br-storage' == transformation['name']) \
+               and ('action' in transformation) and ('add-br' == transformation['action']):
+                transformations.remove(transformation)
 
         # Handle iSER interface with and w/o vlan tagging
         storage_vlan = mlnx.get('storage_vlan')
@@ -192,15 +191,16 @@ class MellanoxSettings(object):
         for role,bridge in cls.data['network_scheme']['roles'].iteritems():
             if bridge == 'br-storage':
                 cls.data['network_scheme']['roles'][role] = vlan_name
-
         # Clean
         if storage_vlan: \
             storage_parent = "{0}.{1}".format(storage_parent, storage_vlan)
-        transformations.remove({
-            'action': 'add-port',
-            'bridge': 'br-storage',
-            'name': storage_parent,
-        })
+
+        for transformation in transformations:
+            if ('name' in transformation) and (transformation['name'] == storage_parent) \
+                and ('bridge' in transformation) and (transformation['bridge'] == 'br-storage') \
+                and ('action' in transformation) and (transformation['action'] == 'add-port'):
+                transformations.remove(transformation)
+
         endpoints['br-storage'] = {'IP' : 'None'}
 
     @classmethod
@@ -383,6 +383,12 @@ class MellanoxSettings(object):
                         network_interface['driver'] = \
                             interfaces[interface]['vendor_specific']['driver']
                     dict_of_interfaces[network_type] = network_interface
+
+            # Set private network in case private and storage on the same port
+            if 'private' not in dict_of_interfaces.keys() and \
+                'storage' in dict_of_interfaces.keys():
+                dict_of_interfaces['private'] = dict_of_interfaces['storage']
+                dict_of_interfaces['private']['bridge'] = 'br-prv'
             return dict_of_interfaces
 
 def main():
