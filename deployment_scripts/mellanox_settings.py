@@ -192,15 +192,16 @@ class MellanoxSettings(object):
         for role,bridge in cls.data['network_scheme']['roles'].iteritems():
             if bridge == 'br-storage':
                 cls.data['network_scheme']['roles'][role] = vlan_name
-
         # Clean
         if storage_vlan: \
             storage_parent = "{0}.{1}".format(storage_parent, storage_vlan)
-        transformations.remove({
-            'action': 'add-port',
-            'bridge': 'br-storage',
-            'name': storage_parent,
-        })
+
+        for transforamtion in transformations:
+            if ('name' in transforamtion) and (transforamtion['name'] == storage_parent) \
+                and ('bridge' in transforamtion) and (transforamtion['bridge'] == 'br-storage') \
+                and ('action' in transforamtion) and (transforamtion['action'] == 'add-port'):
+                transformations.remove(transforamtion)
+
         endpoints['br-storage'] = {'IP' : 'None'}
 
     @classmethod
@@ -383,6 +384,12 @@ class MellanoxSettings(object):
                         network_interface['driver'] = \
                             interfaces[interface]['vendor_specific']['driver']
                     dict_of_interfaces[network_type] = network_interface
+
+            # Set private network in case private and storage on the same port
+            if 'private' not in dict_of_interfaces.keys() and \
+                'storage' in dict_of_interfaces.keys():
+                dict_of_interfaces['private'] = dict_of_interfaces['storage']
+                dict_of_interfaces['private']['bridge'] = 'br-prv'
             return dict_of_interfaces
 
 def main():
