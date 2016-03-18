@@ -16,18 +16,6 @@
 
 source ./common
 
-# If IB interface is configured then append IB configurations
-# to the standard /etc/network/interfaces file, for MLNX_OFED
-# drivers to find it
-if [ $DISTRO == 'ubuntu' ] && [ $DRIVER == 'eth_ipoib' ]; then
-  ib_files=`find /etc/network/interfaces.d/ -name ifcfg-ib* | wc -l`
-  if [ $ib_files != 0 ];then
-    echo >> /etc/network/interfaces
-    cat /etc/network/interfaces.d/ifcfg-ib* >> /etc/network/interfaces
-    \rm -f /etc/network/interfaces.d/ifcfg-ib0*
-  fi
-fi
-
 # Set correct VF number in multi role computes
 # (e.g. cinder & compute)
 if ([[ $ROLES == *compute* ]] && [[ ! $ROLES == "compute" ]]) \
