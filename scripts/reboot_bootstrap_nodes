@@ -73,11 +73,11 @@ do
  ping -c 2 $ip &> /dev/null
  if [ $? -eq 0 ];then
    ssh $ip -o BatchMode=yes -o StrictHostKeyChecking=no reboot &> /dev/null
-   trials=10
+   trials=20
    log "waiting for node-$id to go offline."
    while ping -c 2 $ip &> /dev/null && [ $trials -ne 0 ];do
      ((trials=$trials-1))
-     sleep 1;
+     sleep 5;
    done
    if [ $trials -eq 0 ];then
      log "node-$id reboot failed."
