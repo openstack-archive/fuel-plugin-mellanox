@@ -6,11 +6,11 @@ Supported images
 +-------+--------------------+---------------------------------+
 | Issue | Supported OS       | Tested kernel                   |
 +=======+====================+=================================+
-|   1   | CentOS6.5          | 2.6.32-431.el6.x86_64           |
+|   1   | CentOS7            | 3.10.0-229.14.1.el7.x86_64      |
 +-------+--------------------+---------------------------------+
-|   2   | ubuntu14.04.3      | 3.19.0-25-generic               |
+|   2   | ubuntu14.04        | 3.13.0-67-generic               |
 +-------+--------------------+---------------------------------+
-|   3   | Cirros Mellanox    | 3.2.0-80-virtual Ubuntu 3_amd64 |
+|   3   | Cirros Mellanox    | 3.11.0-26-generic               |
 +-------+--------------------+---------------------------------+
 
-This Fuel Mellanox plugin ver. 2.0-2.0.0-1 is using MLNX_OFED version 2.3-2.0.8.
+This Fuel Mellanox plugin ver. 3.0-3.0.0-1 is using MLNX_OFED version 3.1-1.5.5.
