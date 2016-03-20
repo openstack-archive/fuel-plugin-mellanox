@@ -1,58 +1,54 @@
-.. _configuration:
-
 Mellanox plugin configuration
 =============================
 
-To configure Mellanox backend, follow these steps:
+If you plan to enable VM to VM RDMA and to use iSER storage transport you need to configure switching fabric to support the features.
 
 **Ethernet network:**
 
-* Configure the required VLANs and enable flow control on the Ethernet switch ports.
-  All related VLANs should be enabled on the 40/56GbE switch (Private, Management, Storage networks).
+#. Configure the required VLANs and enable flow control on the Ethernet switch ports.
+#. All related VLANs should be enabled on the Mellanox switch ports (for relevant Fuel logical networks).
+#. Login to the Mellanox switch by ssh and execute following commands:::
 
-* On Mellanox switches, use the commands in Mellanox `reference configuration <https://community.mellanox.com/docs/DOC-1460>`_
-  flow to enable VLANs (e.g. VLAN 1-100 on all ports).
+    switch > enable
+    switch # configure terminal 
+    switch (config) # vlan 1-100
+    switch (config vlan 1-100) # exit
+    switch (config) # interface ethernet 1/1 switchport mode hybrid 
+    switch (config) # interface ethernet 1/1 switchport hybrid allowed-vlan all
+    switch (config) # interface ethernet 1/2 switchport mode hybrid 
+    switch (config) # interface ethernet 1/2 switchport hybrid allowed-vlan all
+    ...
+    switch (config) # interface ethernet 1/36 switchport mode hybrid 
+    switch (config) # interface ethernet 1/36 switchport hybrid allowed-vlan all
 
-* An example of configuring the switch for Ethernet deployment can be found in
-  the `Mirantis Planning Guide <https://docs.mirantis.com/openstack/fuel/fuel-7.0/planning-guide.html#planning-guide>`_.
+   Flow control is required when running iSER (RDMA over RoCE - Ethernet). On Mellanox switches, run the following command to enable flow control on the switches (on all ports in this example):::
 
+    switch (config) # interface ethernet 1/1-1/36 flowcontrol receive on force
+    switch (config) # interface ethernet 1/1-1/36 flowcontrol send on force
 
-Environment creation and configuration
---------------------------------------
+   save the configuration (permanently), run:::
 
-#. `Create an environment <https://docs.mirantis.com/openstack/fuel/fuel-7.0/user-guide.html#create-a-new-openstack-environment>`_.
+    switch (config) # configuration write
 
-#. Open the Settings tab of the Fuel web UI and scroll down the page.
-   In Mellanox OpenStack features section, select the required features:
+**Infiniband network:**
+If you use OpenSM you need to enable virtualization and allow all PKeys:
 
-   .. image:: ./_static/mellanox_features_section.png
-   .. :alt: A screenshot of mellanox features section
+#. Create a new opensm.conf file::
 
-    * The SR-IOV feature supports only KVM hypervisor and Neutron with VLAN segmentation (the latter should be enabled
-      at `environment creation step <https://docs.mirantis.com/openstack/fuel/fuel-7.0/user-guide.html#create-a-new-openstack-environment>`_:
+   opensm -c /etc/opensm/opensm.conf
+#. Enable virtualization by editing /etc/opensm/opensm.conf and changing the allow_both_pkeys value to TRUE.::
 
-      .. image:: ./_static/hypervisor_type.png
-      .. :alt: A screenshot of hypervisors type
+   allow_both_pkeys TRUE
 
-      .. image:: ./_static/network_type.png
-      .. :alt: A screenshot network type
+#. Define the partition keys which are analog for Ethernet VLAN. Each VLAN will be mapped to one PK. Add/Change the following with the command ::
 
-   * The iSER feature requires “Cinder LVM over iSCSI for volumes” enabled in the “Storage” section:
+   vi /etc/opensm/partitions.conf file:
+   (Example)
+   management=0x7fff,ipoib, sl=0, defmember=full : ALL, ALL_SWITCHES=full,SELF=full;
+   vlan1=0x1, ipoib, sl=0, defmember=full : ALL;
+   vlan2=0x2, ipoib, sl=0, defmember=full : ALL;
+   . . .
+   vlan100=0x64, ipoib, sl=0, defmember=full : ALL;
+#. Restart OpenSM::
 
-     .. image:: ./_static/storage_backends.png
-     .. :alt: A screenshot of storage backends
-
-
-.. note:: When configuring Mellanox plugin, please mind the following:
-
-#. You *cannot* install a plugin at the already existing environment.
-   That means, the plugin will appear in the certain environment only if the plugin was installed before creating the environment.
-
-#. Enabling the “Mellanox Openstack features” section enables Mellanox
-   hardware support on your environment, regardless of the iSER & SR-IOV features.
-
-#. In Ethernet cloud, when using SR-IOV & iSER, one of the virtual NICs for SR-IOV will be reserved to the storage network.
-
-#. When using SR-IOV you can set the number of virtual NICs (virtual functions) to up to 64
-   if your hardware and system capabilities like memory and BIOSsupport it).
-   In any case of SR-IOV hardware limitation, the installation will try to fallback the VF number to the default of 16 VFs.
+   /etc/init.d/opensmd restart

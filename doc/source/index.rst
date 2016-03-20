@@ -4,7 +4,7 @@
    contain the root `toctree` directive.
 
 ======================================================
-Guide to the Mellanox Plugin ver. 2.0-2.0.0-2 for Fuel
+Guide to the Mellanox Plugin ver. 3.0-3.0.0-1 for Fuel
 ======================================================
 
 User documentation
@@ -12,12 +12,14 @@ User documentation
 
 .. toctree::
    :maxdepth: 2
- 
+
    definitions
    overview
-   supported_images
-   installation
    guide
+   installation
+   post_deployment
    known_issues
+   supported_images
+   contact_support
+   troubleshooting_notes
    appendix
-
