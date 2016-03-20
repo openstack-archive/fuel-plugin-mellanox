@@ -1,32 +1,38 @@
-.. _known_issues:
-
-
 Known issues
 ============
 
 Issue 1
-    - Description: This release supports Mellanox ConnectX®-3 family adapters only.
-    - Workaround: NA
-
-Issue 2
     - Description: For custom (OEM) adapter cards based on Mellanox ConnectX-3 / ConnectX-3 Pro ICs, adapter firmware must be manually burnt prior to the installation with SR-IOV support
     - Workaround: See `the firmware installation instructions <http://www.mellanox.com/page/oem_firmware_download>`_.
 
+Issue 2
+    - Description: The number of SR-IOV virtual functions supported by Mellanox adapters is up to 16 on ConnectX-3 adapters and up to 62 on ConnectX-3 Pro adapters (depends on your HW capabilities).
+    - Workaround: NA
+
 Issue 3
-    - Description: The number of SR-IOV virtual functions supported by Mellanox adapters is 16 on ConnectX-3 adapters and 128 on ConnectX-3 Pro adapters.
+    - Description: Live and non-live migrations are not supported for VMs with SR-IOV port.
     - Workaround: NA
 
 Issue 4
-    - Description: Deploying more than 10 nodes at a time over a slow PXE network can cause timeouts during the OFED installation
-    - Workaround: Deploy chunks of up to 10 nodes or increase the delay-before-timeout in the plugin’s tasks.yaml file on the Fuel master node. If timeout occurs, click **Deploy Changes** button again.
-
+    - Description: When using a dual port physical NIC for SR-IOV over Ethernet, the Openstack private network has to be allocated on the first port.
+    - Workaround: NA
 
 Issue 5
-    - Description: Using an untagged storage network on the same interface with a private network over Ethernet is not supported when using iSER.
-    - Workaround: Use a separate interface for untagged storage networks for iSER over Ethernet or use a tagged storage network instead.
+    - Description: A single port HCA might not be supported for SRIOV and iSER over Ethernet network.
+    - Workaround: NA
 
 Issue 6
-    - Description: Recovering of a Cinder target might take more than 10 minutes in tagged storage network.
-    - Workaround: Ping from the Cinder target after the reboot to another machine in the cluster over the storage network. The VLAN storage network will be over vlan<vlan#> interface.
+    - Description: SR-IOV QoS is supported only with updating SR-IOV existing ports with a policy. QoS-policy detach might result in non accurate bandwidth limit. (https://bugs.launchpad.net/neutron/+bug/1504165).
+    - Workaround: Delete port / instance and attach a new port.
 
+Issue 7
+    - Description: Starting large amount (>15) of IB VMs with normal port at once may result in some VMs not getting DHCP over InfiniBand networks.
+    - Workaround: Reboot VMs that didn't get IP from DHCP on time or start VMs in smaller chunks (<10).
 
+Issue 8
+    - Description: After large InfinBand deployment of more than ~20 nodes at once with Controllers HA, it might take time for controllers services to stabilize. 
+    - Workaround: Restart openibd service on controller nodes after the deployment, or deploy with phases.
+
+Issue 9
+    - Description: Network verification for IB network is not supported over untagged networks or after deployment.
+    - Workaround: NA
