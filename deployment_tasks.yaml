@@ -49,7 +49,7 @@
   type: shell
   parameters:
     cmd: ./mellanox_settings.py
-    timeout: 20
+    timeout: 100
 # Verify kernel-devel packages are installed (if CentOS)
 - id: validate_kernel_devel
   role: '*'
@@ -59,7 +59,7 @@
   parameters:
     puppet_manifest: puppet/manifests/verify_kernel_devel.pp
     puppet_modules: puppet/modules:/etc/puppet/modules
-    timeout: 200
+    timeout: 600
 # Install OFED + FW upgrade
 - id: install_mlnx_ofed
   role: '*'
@@ -68,7 +68,7 @@
   type: shell
   parameters:
     cmd: ./install_ofed.sh
-    timeout: 3600
+    timeout: 5000
 # add VXLAN offloading parameters
 - id: configure_vxlan_offload
   role: '*'
@@ -77,7 +77,7 @@
   type: shell
   parameters:
     cmd: ./vxlan_offloading.sh configure
-    timeout: 120
+    timeout: 200
 # Configure number of VFs according to the user decision:
 # change modprobe file + IOMMU in grub file + change VFs num in FW
 - id: configure_sriov
@@ -105,7 +105,7 @@
   requires: [rename_iser_probe_vf]
   type: reboot
   parameters:
-    timeout: 500
+    timeout: 5000
 # Check number of VFs
 - id: validate_sriov
   role: '*'
@@ -123,7 +123,7 @@
   type: shell
   parameters:
     cmd: ./configure_qos.sh configure
-    timeout: 100
+    timeout: 200
 # This is a workaround: disable wrong rules in CentOS IBP #1458832.
 - id: remove_blocking_iptable_roles
   role: '*'
@@ -162,7 +162,7 @@
   type: shell
   parameters:
     cmd: ./post_set_mellanox_interfaces.sh
-    timeout: 120
+    timeout: 200
 # Execute post_deployment manifest for each role
 - id: configure_mellanox_controller
   role: ['controller', 'primary-controller']
@@ -199,7 +199,7 @@
   type: shell
   parameters:
     cmd: ./set_apparmor.sh
-    timeout: 200
+    timeout: 500
 # Configure Mellanox NEO SDN controller for auto VLAN
 # provisioning
 - id: configure_mellanox_neo
