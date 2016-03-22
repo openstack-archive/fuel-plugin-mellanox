@@ -27,15 +27,32 @@ function is_qos_required () {
 function add_to_modprobe_file() {
   MLX4_CORE_FILE="/etc/modprobe.d/mlx4_core.conf"
   MLX4_CORE_STR=`cat $MLX4_CORE_FILE`
-  MLX4_CORE_STR="${MLX4_CORE_STR} enable_qos=1 enable_vfs_qos=1"
-  echo $MLX4_CORE_STR > $MLX4_CORE_FILE
+  if [[ ! $MLX4_CORE_STR == *enable_vfs_qos* ]];then
+    MLX4_CORE_STR="${MLX4_CORE_STR} enable_qos=1 enable_vfs_qos=1"
+    echo $MLX4_CORE_STR > $MLX4_CORE_FILE
+  else
+    logger_print info "QoS already configured in Mellanox driver."
+    exit 0
+  fi
 }
 
 function configure_qos () {
   if is_qos_required; then
     logger_print info "Configuring QoS in Mellanox driver."
     add_to_modprobe_file
-    service openibd restart &> /dev/null
+
+    # Kill tgt daemons if exists
+    tgt_locks=`find /var/run/ -name tgtd* | wc -l`
+    if [ $tgt_locks -ne 0 ];then
+      \rm -f /var/run/tgtd* && killall -9 tgtd
+      service tgt stop
+    fi
+
+    service openibd restart && service openvswitch-switch restart
+
+    if [ $tgt_locks -ne 0 ];then
+      service tgt start
+    fi
     return $?
   else
     logger_print info "Skipping QoS configuration in Mellanox driver."
