@@ -27,15 +27,15 @@ attributes:
 
   mlnx_qos:
     value: false
-    label: "Quality of Service over VLAN networks and ports (Neutron)"
+    label: "Quality of Service over Mellanox SR-IOV ports (Neutron)"
     description: |
-               If selected, Neutron "Quality of Service" (QoS) will be enabled for VLAN networks and ports over Mellanox HCAs.
-               This feature is supported in Ethernet mode and over Neutron with VLAN.
+               If selected, Neutron "Quality of Service" (QoS) will be enabled for SR-IOV ports over Mellanox HCAs.
+               This feature is supported in Ethernet mode over Neutron with VLAN after SR-IOV direct port creation.
     weight: 30
     type: "checkbox"
     restrictions:
-      - condition: "settings:common.libvirt_type.value != 'kvm' or not (cluster:net_provider == 'neutron' and networking_parameters:segmentation_type == 'vlan')"
-        message: "For Mellanox QoS support in Neutron, hypervisor type should be KVM and the environment networking should be based on Neutron with VLAN segmentation."
+      - condition: "settings:common.libvirt_type.value != 'kvm' or not (settings:mellanox-plugin.sriov.value == true) or not (cluster:net_provider == 'neutron' and networking_parameters:segmentation_type == 'vlan')"
+        message: "For Mellanox QoS support in Neutron, hypervisor type should be KVM and the environment networking should be based on Neutron with VLAN segmentation and SR-IOV direct port creation."
 
   use_mlnx_neo:
     value: false
