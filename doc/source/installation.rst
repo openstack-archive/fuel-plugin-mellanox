@@ -11,7 +11,7 @@ To install Mellanox plugin, follow these steps:
 #. Install the plugin::
 
    # cd /tmp
-   # fuel plugins --install mellanox-plugin-2.0-2.0.0-1.noarch.rpm
+   # fuel plugins --install mellanox-plugin-3.0-3.0.0-1.noarch.rpm
 
 #. Verify the plugin was installed successfully by having it listed using ``fuel plugins`` command::
 
