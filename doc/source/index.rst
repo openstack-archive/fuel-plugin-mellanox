@@ -3,9 +3,9 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-======================================================
-Guide to the Mellanox Plugin ver. 3.0-3.0.0-1 for Fuel
-======================================================
+=====================================================================
+Guide to the Mellanox ConnectX-3 pro Plugin ver. 3.0-3.0.0-1 for Fuel
+=====================================================================
 
 User documentation
 ==================
