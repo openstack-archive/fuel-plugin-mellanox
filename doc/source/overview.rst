@@ -32,6 +32,12 @@ Developer's specification
 Requirements
 ------------
 
++-----------------------------------+-----------------+
+| Requirement                       | Version/Comment |
++===================================+=================+
+| Mirantis OpenStack compatibility  |   8.0           |
++-----------------------------------+-----------------+
+
 | The Mellanox ConnectX-3 Pro adapters family supports up to 40/56 Gb. To reach 56 Gb speed in
  your network with ConnectX-3 Pro adapters, you must use Mellanox Ethernet / Infiniband switches
  supporting 56 Gb (e.g. SX1710, SX6710). The switch ports should be configured specifically to use
@@ -42,7 +48,7 @@ Requirements
 Limitations
 -----------
 
-- Mellanox SR-IOV and iSER are supported only when choosing Neutron with VLAN segmentation.
+- Mellanox SR-IOV is supported only when choosing Neutron with VLAN segmentation.
 - ConnectX-3 Pro adapters are required in order to enable VXLAN HW offload over Ethernet networks.
 - QoS feature is implemented only for Ethernet VLAN SR-IOV ports using ConnectX-3 Pro adapters.
 - Infiniband is configured by using OpenSM only.
