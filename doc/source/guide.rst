@@ -1,3 +1,7 @@
+.. raw:: pdf
+
+    PageBreak
+
 Mellanox plugin configuration
 =============================
 
@@ -34,7 +38,7 @@ If you plan to enable VM to VM RDMA and to use iSER storage transport you need t
 
     switch (config) # configuration write
 
-   .. note:: When using an untagged storage network for iSER over Ethernet - please add the following commands for Mellanox switches:
+   .. note:: When using an untagged storage network for iSER over Ethernet - please add the following commands for Mellanox switches or use trunk mode instead of hybrid.
 
    ::
 
@@ -42,7 +46,6 @@ If you plan to enable VM to VM RDMA and to use iSER storage transport you need t
     interface ethernet 1/2 switchport hybrid allowed-vlan add 1
     ...
 
-   or use trunk mode instead of hybrid.
 
 **Infiniband network:**
 If you use OpenSM you need to enable virtualization and allow all PKeys:
