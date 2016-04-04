@@ -20,16 +20,16 @@ source $SCRIPT_DIR/common
 readonly SCRIPT_MODE=$1
 
 function get_port_type() {
-  if [ $DRIVER == 'mlx4_en' ]; then
+  if [ $NETWORK_TYPE == 'ethernet' ]; then
     port_type=2
-  elif [ $DRIVER == 'eth_ipoib' ]; then
+  else
     port_type=1
   fi
   echo $port_type
 }
 
 function is_vxlan_offloading_required () {
-  [ $VXLAN_OFFLOADING == true ] && [ $DRIVER == 'mlx4_en' ]
+  [ $VXLAN_OFFLOADING == true ] && [ $NETWORK_TYPE == 'ethernet' ]
   return $?
 }
 
@@ -69,7 +69,13 @@ function set_modprobe_file () {
 configure_vxlan_offloading
 case $SCRIPT_MODE in
   'configure')
-    configure_vxlan_offloading
+    if [ "$CX" == "ConnectX3" ]; then
+      configure_vxlan_offloading
+    fi
+    if [ "$CX" == "ConnectX4" ]; then
+      logger_print info "Skipping VXLAN configuration because VXLAN is configured with ConnectX4."
+    fi
+
     ;;
   'validate')
     # to be added later.
