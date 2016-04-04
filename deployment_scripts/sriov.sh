@@ -26,16 +26,16 @@ readonly GRUB_FILE_CENTOS="/boot/grub/grub.conf"
 readonly GRUB_FILE_UBUNTU="/boot/grub/grub.cfg"
 
 function get_port_type() {
-  if [ $DRIVER == 'mlx4_en' ]; then
+  if [ $NETWORK_TYPE == 'ethernet' ]; then
     port_type=2
-  elif [ $DRIVER == 'eth_ipoib' ]; then
+  else
     port_type=1
   fi
   echo $port_type
 }
 
 function get_num_probe_vfs () {
-  if [ $DRIVER == 'mlx4_en' ]; then
+  if [ `get_port_type` -eq "2" ]; then
     probe_vfs=`calculate_total_vfs`
   else
     probe_vfs=0
@@ -65,7 +65,7 @@ function calculate_total_vfs () {
   fi
 
   # Set Ethernet RDMA storage network
-  if [ $ISER == true ] && [ $DRIVER == 'mlx4_en' ] \
+  if [ $ISER == true ] && [ `get_port_type` -eq "2" ] \
      && [ $num_of_vfs -eq 0 ]; then
     num_of_vfs=1
   fi
@@ -174,12 +174,16 @@ function burn_vfs_in_fw () {
       logger_print debug "Current number of VFs is correctly set to ${current_num_of_vfs} in FW."
     fi
   done
+  if [ $CX == 'ConnectX4' ]; then
+    mlxfwreset --device ${dev} reset --yes
+    logger_print debug "Resetting fw after changing number of VFs to ${total_vfs} in FW for HCA ${dev}"
+  fi
   service mst stop &>/dev/null
 }
 
 function is_sriov_required () {
   [ $SRIOV == true ] ||
-  ( [ $ISER == true ] && [ $DRIVER == 'mlx4_en' ] )
+  ( [ $ISER == true ] && [ `get_port_type` -eq "2" ] )
   return $?
 }
 
@@ -195,9 +199,18 @@ function configure_sriov () {
 
     probe_vfs=`get_num_probe_vfs`
     port_type=`get_port_type`
-    set_modprobe_file $total_vfs &&
     set_kernel_params &&
     burn_vfs_in_fw $total_vfs
+    if [ $CX == 'ConnectX3' ]; then
+      set_modprobe_file $total_vfs &&
+      logger_print info "Detected: ConnectX3 card"
+    fi
+
+    if [ $CX == 'ConnectX4' ]; then
+      set_sriov $total_vfs &&
+      logger_print info "Detected: ConnectX4 card"
+    fi
+
     return $?
   else
     logger_print info "Skipping SR-IOV configuration"
@@ -236,8 +249,17 @@ function validate_sriov () {
   logger_print error "Failed , trying to fallback to ${FALLBACK_NUM_VFS}"
   probe_vfs=`get_num_probe_vfs`
   port_type=`get_port_type`
-  set_modprobe_file $FALLBACK_NUM_VFS
-  service openibd restart &> /dev/null
+
+  if [ $CX == 'ConnectX3' ]; then
+    set_modprobe_file $FALLBACK_NUM_VFS
+    service openibd restart &> /dev/null
+  fi
+  if [ $CX == 'ConnectX4' ]; then
+    set_sriov $FALLBACK_NUM_VFS
+    mlxfwreset --device ${dev} reset --yes
+    logger_print debug "Resetting fw after changing number of VFs to ${FALLBACK_NUM_VFS} in FW for HCA ${dev}"
+  fi
+ 
   current_num_vfs=`lspci | grep -i mellanox | grep -i virtual | wc -l`
   if [ $current_num_vfs -eq $FALLBACK_NUM_VFS ]; then
     logger_print info "Fallback to ${FALLBACK_NUM_VFS} succeeded"
@@ -248,11 +270,34 @@ function validate_sriov () {
   fi
 }
 
+
+function set_sriov () {
+  PORT_TYPE=`get_port_type`
+  TOTAL_VFS=$1
+  device_up=`ibdev2netdev | grep mlx5_ | grep -i up | awk '{print $1}'`
+  interface_device_up=`ibdev2netdev | grep mlx5_ | grep -i up | awk '{print $5}'`
+
+  if [ ${#interface_device_up} -eq 0 ]; then
+    logger_print error "Failed to find mlx5 up ports in ibdev2netdev."
+    exit 1
+  else
+    echo $TOTAL_VFS > /sys/class/net/$interface_device_up/device/sriov_numvfs
+    echo "echo ${TOTAL_VFS} > /sys/class/net/${interface_device_up}/device/sriov_numvfs" > /etc/network/if-up.d/sriov_vfs
+    chmod +x /etc/network/if-up.d/sriov_vfs
+    ifup --all 
+    if [ ! $? -eq 0 ]; then
+      logger_print error "Failed to write $TOTAL_VFS > /sys/class/net/${interface_device_up}/device/sriov_numvfs"
+      exit 1
+    else
+      logger_print debug "Configured total vfs ${TOTAL_VFS} on ${interface_device_up}"
+    fi
+  fi
+}
 #################
 
 case $SCRIPT_MODE in
   'configure')
-    configure_sriov
+    configure_sriov 
     ;;
   'validate')
     validate_sriov
