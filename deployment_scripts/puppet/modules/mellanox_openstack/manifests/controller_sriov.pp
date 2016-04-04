@@ -3,6 +3,7 @@ class mellanox_openstack::controller_sriov (
   $eswitch_apply_profile_patch,
   $mechanism_drivers,
   $mlnx_driver,
+  $network_type,
   $mlnx_sriov,
   $pci_vendor_devices,
   $agent_required,
@@ -30,7 +31,7 @@ class mellanox_openstack::controller_sriov (
     $sdn_extra_mechanism_driver=''
   }
 
-  if ( $mlnx_driver == 'mlx4_en' ){
+  if ( $network_type == 'ethernet' ){
     $ml2_extra_mechanism_driver = "${sdn_extra_mechanism_driver}sriovnicswitch"
     neutron_plugin_ml2 {
       'ml2/mechanism_drivers':                  value => "${ml2_extra_mechanism_driver},${mechanism_drivers}";

@@ -4,7 +4,7 @@ $eswitch_apply_profile_patch = 'True'
 $mechanism_drivers = 'openvswitch'
 $roles = hiera('roles')
 
-# Configure QoS for ETH
+# Configure QoS for connectX3 ETH
 if ( $mlnx['driver'] == 'mlx4_en' and $mlnx['mlnx_qos'] ) {
   class { 'mellanox_openstack::configure_qos' :
     mlnx_sriov => $mlnx['sriov'],
@@ -20,6 +20,7 @@ if ($mlnx['sriov']) {
     eswitch_apply_profile_patch => $eswitch_apply_profile_patch,
     mechanism_drivers           => $mechanism_drivers,
     mlnx_driver                 => $mlnx['driver'],
+    network_type                => $mlnx['network_type'],
     mlnx_sriov                  => $mlnx['sriov'],
     pci_vendor_devices          => $pci_vendor_devices,
     agent_required              => $agent_required,
