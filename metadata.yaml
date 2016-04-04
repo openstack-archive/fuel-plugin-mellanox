@@ -2,16 +2,16 @@
 name: mellanox-plugin
 
 # Human-readable name for your plugin
-title: Mellanox Openstack Features
+title: Mellanox ConnectX-4 Openstack Features
 
 # Plugin version
-version: 3.0.0
+version: 3.0.1
 
 # Description
-description: Enable features over Mellanox hardware
+description: Enable features over Mellanox ConnectX-4 Adapters
 
 # Required fuel version
-fuel_version: ['7.0', '8.0']
+fuel_version: ['8.0']
 
 # Specify license of your plugin
 licenses: ['Apache License Version 2.0']

@@ -5,7 +5,7 @@ $firewall_driver = 'neutron.agent.firewall.NoopFirewallDriver'
 $private_net = $quantum_settings['default_private_net']
 $roles = hiera('roles')
 
-if ( $mlnx_driver == 'mlx4_en' ){
+if ( $mlnx['iser'] and $mlnx['driver'] != 'eth_ipoib' and $mlnx['sriov'] ){
   $exclude_vf = '0'
 } else {
   $exclude_vf = ''

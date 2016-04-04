@@ -30,7 +30,7 @@ class mellanox_openstack::controller_sriov (
     $sdn_extra_mechanism_driver=''
   }
 
-  if ( $mlnx_driver == 'mlx4_en' ){
+  if ( $mlnx_driver != 'eth_ipoib' ){
     $ml2_extra_mechanism_driver = "${sdn_extra_mechanism_driver}sriovnicswitch"
     neutron_plugin_ml2 {
       'ml2/mechanism_drivers':                  value => "${ml2_extra_mechanism_driver},${mechanism_drivers}";

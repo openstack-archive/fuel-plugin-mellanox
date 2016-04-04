@@ -35,7 +35,7 @@ class mellanox_openstack::compute_sriov (
     value => $firewall_driver,
   }
 
-  if ( $mlnx_driver == 'mlx4_en' ){
+  if ( $mlnx_driver != 'eth_ipoib' ){
     package { $sriov_agent_package:
       ensure => installed,
     }

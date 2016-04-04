@@ -64,7 +64,11 @@ function configure_qos () {
 
 case $SCRIPT_MODE in
   'configure')
-    configure_qos
+    if [ "$CX" == "ConnectX-3" ]; then
+      configure_qos
+    fi
+    if [ "$CX" == "ConnectX-4" ]; then
+      logger_print info "QoS is not implemented for ConnectX-4." 
     ;;
   *)
     logger_print error "Unsupported execution mode ${SCRIPT_MODE}."
