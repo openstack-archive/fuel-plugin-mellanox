@@ -63,17 +63,27 @@
 # Install OFED + FW upgrade
 - id: install_mlnx_ofed
   role: '*'
-  required_for: [configure_vxlan_offload]
+  required_for: [customize_mellanox_hiera_post]
   requires: [validate_kernel_devel]
   type: shell
   parameters:
     cmd: ./install_ofed.sh
     timeout: 5000
+# Add relevant settings for Mellanox manifests to mellanox plugin section in
+# Hiera, to make the data easily accessible and independent of astute.yaml
+- id: customize_mellanox_hiera_post
+  role: '*'
+  required_for: [configure_vxlan_offload]
+  requires: [install_mlnx_ofed]
+  type: shell
+  parameters:
+    cmd: ./mellanox_settings.py
+    timeout: 100
 # add VXLAN offloading parameters
 - id: configure_vxlan_offload
   role: '*'
   required_for: [configure_sriov]
-  requires: [install_mlnx_ofed]
+  requires: [customize_mellanox_hiera_post]
   type: shell
   parameters:
     cmd: ./vxlan_offloading.sh configure
@@ -87,34 +97,26 @@
   type: shell
   parameters:
     cmd: ./sriov.sh configure
-    timeout: 200
+    timeout: 300
 # if VXLAN is not required. Rename iSER interface for Eth mode
 - id: rename_iser_probe_vf
   role: '*'
-  required_for: [reboot_after_ofed]
+  required_for: [validate_sriov]
   requires: [configure_sriov]
   type: puppet
   parameters:
     puppet_manifest: puppet/manifests/iser_rename.pp
     puppet_modules: puppet/modules:/etc/puppet/modules
-    timeout: 200
-# Reboot due to OFED installation / IOMMU configuration
-- id: reboot_after_ofed
-  role: '*'
-  required_for: [validate_sriov]
-  requires: [rename_iser_probe_vf]
-  type: reboot
-  parameters:
-    timeout: 5000
+    timeout: 300
 # Check number of VFs
 - id: validate_sriov
   role: '*'
   required_for: [configure_qos]
-  requires: [reboot_after_ofed]
+  requires: [rename_iser_probe_vf]
   type: shell
   parameters:
     cmd: ./sriov.sh validate
-    timeout: 200
+    timeout: 300
 # Enable QoS if required
 - id: configure_qos
   role: '*'
@@ -162,7 +164,7 @@
   type: shell
   parameters:
     cmd: ./post_set_mellanox_interfaces.sh
-    timeout: 200
+    timeout: 500
 # Execute post_deployment manifest for each role
 - id: configure_mellanox_controller
   role: ['controller', 'primary-controller']

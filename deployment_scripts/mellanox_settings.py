@@ -16,6 +16,7 @@
 
 import os
 import sys
+import subprocess
 import yaml
 import glob
 import logging
@@ -24,7 +25,16 @@ import traceback
 MLNX_SECTION = 'mellanox-plugin'
 SETTINGS_FILE = '/etc/astute.yaml'
 PLUGIN_OVERRIDE_FILE = '/etc/hiera/override/plugins.yaml'
-MLNX_DRIVERS_LIST = ('mlx4_en', 'eth_ipoib')
+MLNX_DRIVERS_LIST = { 'ConnectX-3': {'eth_driver' : 'mlx4_en', 'ib_driver' : 'eth_ipoib'},
+                      'ConnectX-4': {'eth_driver' : 'mlx5_core', 'ib_driver' : 'eth_ipoib'}}
+MLNX_DRIVERS = set([MLNX_DRIVERS_LIST[card][net]
+                    for card in MLNX_DRIVERS_LIST
+                    for net in MLNX_DRIVERS_LIST[card]])
+ETH_DRIVERS = set([MLNX_DRIVERS_LIST[card][net]
+                   for card in MLNX_DRIVERS_LIST
+                   for net in MLNX_DRIVERS_LIST[card]
+                   if net == 'eth_driver'])
+IB_DRIVERS = MLNX_DRIVERS - ETH_DRIVERS
 ISER_IFC_NAME = 'mlnx_iser0'
 LOG_FILE = '/var/log/mellanox-plugin.log'
 
@@ -64,6 +74,56 @@ class MellanoxSettings(object):
         return ifc
 
     @classmethod
+    def get_card_type(cls, driver):
+        for card in MLNX_DRIVERS_LIST.keys():
+          if driver in MLNX_DRIVERS_LIST[card].values():
+            network_driver_type = MLNX_DRIVERS_LIST[card].keys()[MLNX_DRIVERS_LIST[card].values()\
+                                            .index(driver)]
+            return card
+
+    @classmethod
+    def add_cx_card(cls):
+        mlnx_interfaces = cls.mlnx_interfaces_section
+        drivers = list()
+        interfaces = list()
+        mlnx = cls.get_mlnx_section()
+        for network_type, ifc_dict in mlnx_interfaces.iteritems():
+            if 'driver' in ifc_dict and network_type in ['private','management','storage']:
+              drivers.append(ifc_dict['driver'])
+              interfaces.append(ifc_dict['interface'])
+
+        drivers_set = list(set(drivers))
+        interfaces_set = list(set(interfaces))
+        if (len(drivers_set) > 1):
+             logging.error("Multiple ConnectX adapters was found in this environment.")
+             raise MellanoxSettingsException(
+                 "Multiple ConnectX adapters was found in this environment."
+             )
+        else:
+          current_driver = drivers_set[0]
+          mellanox_interface = interfaces_set[0]
+          if current_driver in ETH_DRIVERS:
+              mlnx['network_type'] = 'ethernet'
+              mlnx['cx_card'] = cls.get_card_type(current_driver)
+          elif current_driver in IB_DRIVERS:
+              mlnx['network_type'] = 'infiniband'
+              ibdev = os.popen('ibdev2netdev').readlines()
+              if not ibdev:
+                mlnx['cx_card'] = 'none'
+                logging.error('Failed executing ibdev2netdev')
+                return 0
+              interface_line = [l for l in ibdev if mellanox_interface in l]
+              if interface_line and 'mlx5' in interface_line.pop():
+                  mlnx['cx_card'] = 'ConnectX-4'
+              else:
+                  mlnx['cx_card'] = 'ConnectX-3'
+
+          network_info_msg = 'Detected Network Type is: %s ', mlnx['network_type']
+          card_info_msg = 'Detected Card Type is: %s ', mlnx['cx_card']
+          logging.info(network_info_msg)
+          logging.info(card_info_msg)
+
+    @classmethod
     def add_driver(cls):
         interfaces = cls.get_interfaces_section()
         mlnx = cls.get_mlnx_section()
@@ -87,14 +147,14 @@ class MellanoxSettings(object):
         mlnx = cls.get_mlnx_section()
 
         private_ifc = cls.get_interface_by_network('private')
-        if mlnx['driver'] == 'eth_ipoib':
+        if mlnx['driver'] == MLNX_DRIVERS_LIST[mlnx['cx_card']]['ib_driver']:
             if 'bus_info' not in interfaces[private_ifc]['vendor_specific']:
                 raise MellanoxSettingsException(
                     "Couldn't find 'bus_info' for interface "
                     "{0}".format(private_ifc)
                 )
             mlnx['physical_port'] = interfaces[private_ifc]['vendor_specific']['bus_info']
-        elif mlnx['driver'] == 'mlx4_en':
+        elif mlnx['driver'] == MLNX_DRIVERS_LIST[mlnx['cx_card']]['eth_driver']:
             mlnx['physical_port'] = private_ifc
 
     @classmethod
@@ -110,7 +170,7 @@ class MellanoxSettings(object):
                 raise MellanoxSettingsException(
                     "Failed reading vlan for br-storage"
                 )
-            if mlnx['driver'] == 'eth_ipoib':
+            if mlnx['driver'] == MLNX_DRIVERS_LIST[mlnx['cx_card']]['ib_driver']:
                 pkey = format((int(vlan) ^ 0x8000),'04x')
                 mlnx['storage_pkey'] = pkey
 
@@ -124,9 +184,9 @@ class MellanoxSettings(object):
     def add_iser_interface_name(cls):
         mlnx = cls.get_mlnx_section()
         storage_ifc = cls.get_interface_by_network('storage')
-        if mlnx['driver'] == 'mlx4_en':
+        if mlnx['driver'] == MLNX_DRIVERS_LIST[mlnx['cx_card']]['eth_driver']:
             mlnx['iser_ifc_name'] = ISER_IFC_NAME
-        elif mlnx['driver'] == 'eth_ipoib':
+        elif mlnx['driver'] == MLNX_DRIVERS_LIST[mlnx['cx_card']]['ib_driver']:
             interfaces = cls.get_interfaces_section()
             mlnx['iser_ifc_name'] = interfaces[storage_ifc]['vendor_specific']['bus_info']
         else:
@@ -150,7 +210,7 @@ class MellanoxSettings(object):
         # Handle iSER interface with and w/o vlan tagging
         storage_vlan = mlnx.get('storage_vlan')
         storage_parent = cls.get_interface_by_network('storage')
-        if storage_vlan and mlnx['driver'] == 'mlx4_en': # Use VLAN dev
+        if storage_vlan and mlnx['driver'] == MLNX_DRIVERS_LIST[mlnx['cx_card']]['eth_driver']: # Use VLAN dev
             vlan_name = "{0}.{1}".format(ISER_IFC_NAME, storage_vlan)
             # Set storage rule to iSER interface vlan interface
             cls.data['network_scheme']['roles']['storage'] = vlan_name
@@ -212,9 +272,10 @@ class MellanoxSettings(object):
         # the main change will be here because it reads phy_interfaces
         mlnx_interfaces = cls.mlnx_interfaces_section
         drivers = list()
+        mlnx = cls.get_mlnx_section()
         for network_type, ifc_dict in mlnx_interfaces.iteritems():
             if 'driver' in ifc_dict and \
-                ifc_dict['driver'] in MLNX_DRIVERS_LIST:
+                ifc_dict['driver'] in MLNX_DRIVERS_LIST[mlnx['cx_card']].values():
                   drivers.append(ifc_dict['driver'])
         return list(set(drivers))
 
@@ -232,6 +293,8 @@ class MellanoxSettings(object):
 
     @classmethod
     def update_role_settings(cls):
+        # detect ConnectX card
+        cls.add_cx_card()
         # realize the driver in use (eth/ib)
         cls.add_driver()
         # decide the physical function for SR-IOV
