@@ -97,7 +97,7 @@
   parameters:
     puppet_manifest: puppet/manifests/iser_rename.pp
     puppet_modules: puppet/modules:/etc/puppet/modules
-    timeout: 200
+    timeout: 300
 # Reboot due to OFED installation / IOMMU configuration
 - id: reboot_after_ofed
   role: '*'
@@ -114,7 +114,7 @@
   type: shell
   parameters:
     cmd: ./sriov.sh validate
-    timeout: 200
+    timeout: 300
 # Enable QoS if required
 - id: configure_qos
   role: '*'
@@ -162,7 +162,7 @@
   type: shell
   parameters:
     cmd: ./post_set_mellanox_interfaces.sh
-    timeout: 200
+    timeout: 300
 # Execute post_deployment manifest for each role
 - id: configure_mellanox_controller
   role: ['controller', 'primary-controller']

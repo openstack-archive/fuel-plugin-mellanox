@@ -2,6 +2,7 @@ class mellanox_openstack::compute_sriov (
   $physnet,
   $physifc,
   $mlnx_driver,
+  $network_type,
   $firewall_driver,
   $exclude_vf,
 ) {
@@ -35,7 +36,7 @@ class mellanox_openstack::compute_sriov (
     value => $firewall_driver,
   }
 
-  if ( $mlnx_driver == 'mlx4_en' ){
+  if ( $network_type == 'ethernet' ){
     package { $sriov_agent_package:
       ensure => installed,
     }
