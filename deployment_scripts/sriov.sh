@@ -26,16 +26,24 @@ readonly GRUB_FILE_CENTOS="/boot/grub/grub.conf"
 readonly GRUB_FILE_UBUNTU="/boot/grub/grub.cfg"
 
 function get_port_type() {
-  if [ $DRIVER == 'mlx4_en' ]; then
-    port_type=2
-  elif [ $DRIVER == 'eth_ipoib' ]; then
+
+  if [ "$CX" == "ConnectX-3" ]; then
+    if [ $DRIVER == 'mlx4_en' ]; then
+      port_type=2
+    fi
+  elif [ "$CX" == "ConnectX-4" ]; then
+    if [ $DRIVER == 'mlx5_en' ]; then
+      port_type=2
+    fi
+  fi
+  if [ $DRIVER == 'eth_ipoib' ]; then
     port_type=1
   fi
   echo $port_type
 }
 
 function get_num_probe_vfs () {
-  if [ $DRIVER == 'mlx4_en' ]; then
+  if [ `get_port_type` -eq "2" ]; then
     probe_vfs=`calculate_total_vfs`
   else
     probe_vfs=0
@@ -65,7 +73,7 @@ function calculate_total_vfs () {
   fi
 
   # Set Ethernet RDMA storage network
-  if [ $ISER == true ] && [ $DRIVER == 'mlx4_en' ] \
+  if [ $ISER == true ] && [ `get_port_type` -eq "2" ] \
      && [ $num_of_vfs -eq 0 ]; then
     num_of_vfs=1
   fi
@@ -173,13 +181,14 @@ function burn_vfs_in_fw () {
     else
       logger_print debug "Current number of VFs is correctly set to ${current_num_of_vfs} in FW."
     fi
+    mlxfwreset --device ${dev} reset
   done
   service mst stop &>/dev/null
 }
 
 function is_sriov_required () {
   [ $SRIOV == true ] ||
-  ( [ $ISER == true ] && [ $DRIVER == 'mlx4_en' ] )
+  ( [ $ISER == true ] && [ `get_port_type` -eq "2" ] )
   return $?
 }
 
@@ -195,9 +204,13 @@ function configure_sriov () {
 
     probe_vfs=`get_num_probe_vfs`
     port_type=`get_port_type`
-    set_modprobe_file $total_vfs &&
     set_kernel_params &&
     burn_vfs_in_fw $total_vfs
+    if [ "$CX" == "ConnectX-3" ]; then
+      set_modprobe_file $total_vfs &&
+    elif [ "$CX" == "ConnectX-4" ]; then
+      set_sriov $total_vfs &&
+    fi
     return $?
   else
     logger_print info "Skipping SR-IOV configuration"
@@ -248,11 +261,24 @@ function validate_sriov () {
   fi
 }
 
+
+function set_sriov () {
+  PORT_TYPE=`get_port_type`
+  TOTAL_VFS=$1
+  device_up=`ibdev2netdev | grep mlx5_ | grep -i up | awk '{print $1}'`
+  interface_device_up=`ibdev2netdev | grep mlx5_ | grep -i up | awk '{print $5}'`
+  echo $TOTAL_VFS > /sys/class/net/$interface_device_up/device/sriov_numvfs
+  line_num=`grep -n "/sys/class/net/$interface_device_up/device/sriov_numvfs" /etc/rc.local | cut -d':' -f1`
+  if [ ! -z ${line_num} ]; then
+    sed -i -e "${line_num}d" /etc/rc.local
+  fi
+  echo "echo ${TOTAL_VFS} > /sys/class/net/${interface_device_up}/device/sriov_numvfs" >> /etc/rc.local 
+}
 #################
 
 case $SCRIPT_MODE in
   'configure')
-    configure_sriov
+    configure_sriov       
     ;;
   'validate')
     validate_sriov

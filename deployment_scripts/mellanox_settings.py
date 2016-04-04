@@ -16,6 +16,7 @@
 
 import os
 import sys
+import subprocess
 import yaml
 import glob
 import logging
@@ -24,7 +25,6 @@ import traceback
 MLNX_SECTION = 'mellanox-plugin'
 SETTINGS_FILE = '/etc/astute.yaml'
 PLUGIN_OVERRIDE_FILE = '/etc/hiera/override/plugins.yaml'
-MLNX_DRIVERS_LIST = ('mlx4_en', 'eth_ipoib')
 ISER_IFC_NAME = 'mlnx_iser0'
 LOG_FILE = '/var/log/mellanox-plugin.log'
 
@@ -62,6 +62,31 @@ class MellanoxSettings(object):
         mlnx_interfaces_section = cls.mlnx_interfaces_section
         ifc = mlnx_interfaces_section[network]['interface']
         return ifc
+
+    @classmethod
+    def add_cx_card(cls):
+        command_get_cx_cards = "lspci | grep -i mellanox | tr ' ' '\n' | grep ConnectX | tr -d '[' | tr -d ']' | sort -u"
+        p = subprocess.Popen(command_get_cx_cards, shell=True, stdout=subprocess.PIPE,
+                            stderr=subprocess.STDOUT)
+        res = p.stdout.readlines()
+        retval = p.wait()
+        if retval != 0:
+          print 'Failed to execute command lspci.'
+          sys.exit()
+
+        cx_cards = []
+        for card in res:
+          cx_cards.append(card.strip())
+        global MLNX_DRIVERS_LIST
+        mlnx = cls.get_mlnx_section()
+        CX_CARD = mlnx['cx_card']
+
+        if CX_CARD not in cx_cards:
+          raise MellanoxSettingsException("Found mismatching Mellanox Card.")
+        if CX_CARD == 'ConnectX-3':
+          MLNX_DRIVERS_LIST = ('mlx4_en', 'eth_ipoib')
+        elif CX_CARD == 'ConnectX-4':
+          MLNX_DRIVERS_LIST = ('mlx5_en', 'eth_ipoib')
 
     @classmethod
     def add_driver(cls):
@@ -232,6 +257,8 @@ class MellanoxSettings(object):
 
     @classmethod
     def update_role_settings(cls):
+        # detect ConnectX card
+        cls.add_cx_card()
         # realize the driver in use (eth/ib)
         cls.add_driver()
         # decide the physical function for SR-IOV

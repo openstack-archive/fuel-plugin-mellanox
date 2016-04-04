@@ -87,7 +87,13 @@ function install_ofed_without_fw_update () {
 
   logger_print info "Installing OFED drivers"
   OFED_INSTALL_SCRIPT_CMD="/usr/bin/perl ${OFED_INSTALL_SCRIPT}"
-  ${OFED_INSTALL_SCRIPT_CMD} --force --enable-sriov --without-fw-update
+  if [ "$CX" == "ConnectX-3" ]; then
+    ${OFED_INSTALL_SCRIPT_CMD} --force --enable-sriov --without-fw-update
+  fi
+  if [ "$CX" == "ConnectX-4" ]; then
+    ${OFED_INSTALL_SCRIPT_CMD} --force
+  fi
+
   rc=$?
   if [ $rc -ne 0 ]; then
     logger_print error "Failed execute ${OFED_INSTALL_SCRIPT_CMD} error code ${rc}"
@@ -119,7 +125,12 @@ function update_fw_if_not_oem () {
   logger_print info "Updating FW on Mellanox HCA with BUS ID = ${BUS_ID}"
 
   OFED_INSTALL_SCRIPT_CMD="/usr/bin/perl ${OFED_INSTALL_SCRIPT}"
-  ${OFED_INSTALL_SCRIPT_CMD} --force --enable-sriov --fw-update-only
+  if [ "$CX" == "ConnectX-3" ]; then
+    ${OFED_INSTALL_SCRIPT_CMD} --force --enable-sriov --without-fw-update
+  fi
+  if [ "$CX" == "ConnectX-4" ]; then
+    ${OFED_INSTALL_SCRIPT_CMD} --force
+  fi
   if [ $? -ne 0 ]; then
     logger_print error "Failed execute ${OFED_INSTALL_SCRIPT_CMD} error code $?"
   fi
