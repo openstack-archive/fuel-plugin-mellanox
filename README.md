@@ -67,27 +67,36 @@ To install Mellanox plugin, follow these steps:
 1. Install Fuel Master node. For more information on how to create a Fuel Master node, please see
 [Mirantis Fuel 8.0 documentation](https://docs.mirantis.com/openstack/fuel/fuel-8.0/)
 
+
 2. Download the plugin rpm file for MOS 8.0 from
 [Fuel Plugin Catalog](https://www.mirantis.com/products/openstack-drivers-and-plugins/fuel-plugins)
 
+
 3. Copy the plugin on already installed Fuel Master. scp can be used for that:
+
      ```
      # scp mellanox-plugin-3.0-3.0.0-1.noarch.rpm root@<Fuel_Master_ip>:/tmp
      ```
+
 4. Install the plugin:
+
      ```
      # cd /tmp
      # fuel plugins --install mellanox-plugin-3.0-3.0.0-1.noarch.rpm
      ```
+
 5. Verify the plugin was installed successfully by having it listed using ``fuel plugins`` command:
+
      ```
      # fuel plugins
      #  id | name              | version | package_version
      #  ---|-------------------|---------|----------------
      #  1  | mellanox-plugin   | 3.0.0   | 3.0.0
      ```
+
 6. Create new bootstrap image for supporting infiniband networks ``create_mellanox_vpi_bootstrap``
 can be used
+
      ```
      [root@fuel ~]# create_mellanox_vpi_bootstrap
         Try to build image with data:
@@ -99,6 +108,7 @@ can be used
         . . .
         Bootstrap image f790e9f8-5bc5-4e61-9935-0640f2eed949 has been activated.
      ```
+
 7. In case of using the customized bootstrap image, you must reboot your target nodes with the
 new bootstrap image you just created. If you already have discovered nodes you can either reboot
 them manually or use `reboot_bootstrap_nodes` command.  Run `reboot_bootstrap_nodes -h` for help.
