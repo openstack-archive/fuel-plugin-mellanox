@@ -91,26 +91,18 @@
 # if VXLAN is not required. Rename iSER interface for Eth mode
 - id: rename_iser_probe_vf
   role: '*'
-  required_for: [reboot_after_ofed]
+  required_for: [validate_sriov]
   requires: [configure_sriov]
   type: puppet
   parameters:
     puppet_manifest: puppet/manifests/iser_rename.pp
     puppet_modules: puppet/modules:/etc/puppet/modules
     timeout: 200
-# Reboot due to OFED installation / IOMMU configuration
-- id: reboot_after_ofed
-  role: '*'
-  required_for: [validate_sriov]
-  requires: [rename_iser_probe_vf]
-  type: reboot
-  parameters:
-    timeout: 5000
 # Check number of VFs
 - id: validate_sriov
   role: '*'
   required_for: [configure_qos]
-  requires: [reboot_after_ofed]
+  requires: [rename_iser_probe_vf]
   type: shell
   parameters:
     cmd: ./sriov.sh validate
