@@ -5,13 +5,13 @@ name: mellanox-plugin
 title: Mellanox Openstack Features
 
 # Plugin version
-version: 3.0.0
+version: 3.1.0
 
 # Description
 description: Enable features over Mellanox hardware
 
 # Required fuel version
-fuel_version: ['7.0', '8.0']
+fuel_version: ['8.0']
 
 # Specify license of your plugin
 licenses: ['Apache License Version 2.0']
@@ -27,11 +27,6 @@ groups: ['storage::cinder', 'network', 'hypervisor']
 
 # The plugin is compatible with releases in the list
 releases:
-  - os: ubuntu
-    version: 2015.1.0-7.0
-    mode: ['ha']
-    deployment_scripts_path: deployment_scripts/
-    repository_path: repositories/ubuntu
   - os: ubuntu
     version: liberty-8.0
     mode: ['ha']
