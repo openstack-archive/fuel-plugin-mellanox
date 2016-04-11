@@ -121,6 +121,9 @@ function update(){
 \rm /etc/modprobe.d/ml*_core.conf
 \rm /etc/modprobe.d/ib_ipoib.conf
 
+# Ensure FW updated
+mlnx_fw_upgrade
+
 # Ensure eth_ipoib module
 if ! lsmod | grep -wq eth_ipoib
 then

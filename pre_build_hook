@@ -48,7 +48,6 @@ function download {
   fi
 }
 
-
 function get_packages() {
   file_type=$1
   old_packages=$2
@@ -59,26 +58,11 @@ function get_packages() {
   done
 }
 
-old_rpms="${PLUGIN_DIR}/repositories/centos/Packages/*.rpm"
-rpm_files="cirros-testvm-mellanox-0.3.2-1.mira3.x86_64.rpm
-           cirros-testvm-mellanox-ib-0.3.2-7.el6.x86_64.rpm
-           eswitchd-0.11-5.el6.x86_64.rpm
-           mlnx-dnsmasq-2014.2.2-1.noarch.rpm
-           mlnx-ofed-fuel-2.3-2.0.8.el6.x86_64.rpm
-           redhat-rpm-config-9.0.3-42.el6.centos.noarch.rpm"
-#get_packages "rpm" "$old_rpms" "$rpm_files" # CentOS is not supported in 7.0
-
 old_debs="${PLUGIN_DIR}/repositories/ubuntu/*.deb"
 deb_files="cirros-testvm-mellanox_0.3.2-ubuntu3_amd64.deb
            cirros-testvm-mellanox-ib_0.3.2-9_amd64.deb
            eswitchd_1.0.0-18_amd64.deb
            mlnx-ofed-fuel_3.2-2.0.0.0_amd64.deb
-           mlnx-ofed-kernel-dkms_3.1-OFED.3.1.1.0.3.1.g9032737_all.deb
-           mlnx-ofed-kernel-utils_3.1-OFED.3.1.1.0.3.1.g9032737_amd64.deb
            lldpd_0.9.1-0_amd64.deb
            python-networking-mlnx_7.0.0-1_all.deb"
 get_packages "deb" "$old_debs" "$deb_files"
-
-bootstrap_dir="${PLUGIN_DIR}/bootstrap/"
-bootstrap_files="initrd_mlnx_mos*"
-get_packages "bootstrap" "$bootstrap_dir/$bootstrap_files" "$bootstrap_files"

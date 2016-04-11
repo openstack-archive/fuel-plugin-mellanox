@@ -14,17 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-OFED_DEBS_DIR=/opt/ofed/MLNX_OFED/DEBS
-
-# Set mlnx scripts to run on boot
-sed -i '1a\$(init_mlnx.sh > \/dev\/null 2>\&1) \&\n' /etc/rc.local
-if [ ! -z $1 ]; then
-  sed -i '1a\export FORCE_LINK_TYPE=true' /etc/rc.local
-  sed -i "1a\export LINK_TYPE=$1" /etc/rc.local
-fi
-
-# Install required packages
-dpkg -i ${OFED_DEBS_DIR}/mlnx-ofed-kernel-utils*.deb
-dpkg -i ${OFED_DEBS_DIR}/mlnx-ofed-kernel-dkms*.deb
+/opt/mellanox_init.sh 1
 
 exit 0
