@@ -13,16 +13,22 @@
 # implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-#!/bin/bash
 
-OFED_DEBS_DIR=/opt/ofed/MLNX_OFED/DEBS
+BUS_ID=`lspci | grep -m 1 Mellanox | cut -d' ' -f1`
+LOG_FILE=/var/log/mlnx_fw_update.log
 
-# Set mlnx scripts to run on boot
-sed -i '1a\$(init_mlnx.sh > \/dev\/null 2>\&1) \&\n' /etc/rc.local
+if [ -z $BUS_ID ]; then
+  echo "Didn't find bus, skipping firmware upgrade" >> $LOG_FILE
+  exit 0
+fi
 
-# Install required packages
-dpkg -i ${OFED_DEBS_DIR}/mlnx-ofed-kernel-utils*.deb
-dpkg -i ${OFED_DEBS_DIR}/mlnx-ofed-kernel-dkms*.deb
-dpkg -i ${OFED_DEBS_DIR}/mstflint*.deb
+mstflint -d ${BUS_ID} q | grep -i PSID | grep MT_
+if [ $? -ne 0 ]; then
+  echo "Not Mellanox Card, skipping firmware upgrade" >> $LOG_FILE
+  exit 0
+else
+  echo "Starting FW upgrade." > $LOG_FILE
+  dpkg -i /opt/ofed/MLNX_OFED/DEBS/mlnx-fw-updater*.deb >> $LOG_FILE
+fi
 
 exit 0

@@ -14,7 +14,10 @@ current_time = time.strftime("%d_%m_%y_%H_%M")
 
 with open("/etc/fuel-bootstrap-cli/fuel_bootstrap_cli.yaml", 'r') as stream:
     fuel_bootstrap_config = yaml.load(stream)
+    override = False
     repos_names = [repo['name'] for repo in fuel_bootstrap_config['repos']]
+
+    # Verify Mellanox repo
     if 'mlnx' not in repos_names:
         fuel_bootstrap_config['repos'].append({'priority': 1100,
                                              'name': 'mlnx',
@@ -22,14 +25,25 @@ with open("/etc/fuel-bootstrap-cli/fuel_bootstrap_cli.yaml", 'r') as stream:
                                              'section': None,
                                              'type': 'deb',
                                              'uri': plugin_uri})
+        override = True
+
+    # Verify SR-IOV capabilities
+    if 'intel_iommu=on' not in fuel_bootstrap_config['extend_kopts']:
+        fuel_bootstrap_config['extend_kopts'] = fuel_bootstrap_config['extend_kopts'] \
+                                                + ' intel_iommu=on'
+        override = True
+
+    # Override fuel bootstrap yaml if needed
+    if override:
         with open("/etc/fuel-bootstrap-cli/fuel_bootstrap_cli.yaml", "w") as f:
             yaml.dump(fuel_bootstrap_config, f)
 
-    extra_packages = "\'mlnx-ofed-kernel-dkms\'"
+    extra_packages = ['mlnx-ofed-fuel', 'python-libxml2', 'lsof']
+    packages = ''.join(['--package %s ' % p for p in extra_packages])
     extra_dir = "/var/www/nailgun/plugins/%s/bootstrap/sync" % plugin
-    cmd = "fuel-bootstrap build --debug --package {0} --extra-dir {1} \
+    cmd = "fuel-bootstrap build --debug {0} --extra-dir {1} \
            --label 'bootstrap_with_ofed_{2}' \
            --output-dir /tmp/ \
            --script {1}/opt/mellanox_init.sh \
-           --activate".format(extra_packages, extra_dir, current_time)
+           --activate".format(packages, extra_dir, current_time)
     os.system(cmd)

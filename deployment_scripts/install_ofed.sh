@@ -97,34 +97,6 @@ function install_ofed_without_fw_update () {
   fi
 }
 
-function update_fw_if_not_oem () {
-  BUS_ID=`lspci | grep -m 1 Mellanox | cut -d' ' -f1`
-  if [ -z $BUS_ID ]; then
-    logger_print info "Didn't find bus, skipping firmware upgrade"
-    exit 0
-  fi
-
-  mstflint -d ${BUS_ID} q | grep -i PSID | grep MT_
-  if [ $? -ne 0 ]; then
-    logger_print info "Not Mellanox Card, skipping firmware upgrade"
-    exit 0
-  fi
-
-  OFED_INSTALL_SCRIPT="${OFED_DIR}/mlnxofedinstall"
-  if [ ! -f $OFED_INSTALL_SCRIPT ]; then
-    logger_print error "Failed to find $OFED_INSTALL_SCRIPT"
-    exit 1
-  fi
-
-  logger_print info "Updating FW on Mellanox HCA with BUS ID = ${BUS_ID}"
-
-  OFED_INSTALL_SCRIPT_CMD="/usr/bin/perl ${OFED_INSTALL_SCRIPT}"
-  ${OFED_INSTALL_SCRIPT_CMD} --force --enable-sriov --fw-update-only
-  if [ $? -ne 0 ]; then
-    logger_print error "Failed execute ${OFED_INSTALL_SCRIPT_CMD} error code $?"
-  fi
-}
-
 function enable_eipoib (){
   if [ $DRIVER == 'eth_ipoib' ]; then
     sed -i s/^E_IPOIB_LOAD.*$/E_IPOIB_LOAD=yes/g /etc/infiniband/openib.conf
@@ -160,10 +132,6 @@ if ! is_ofed_installed; then
   # Enable Ethernet IP Over Infiniband in case of eth_ipoib driver
   enable_eipoib
 fi
-
-# OEM cards require a different dedicated OFED build, this build doesn't
-# support them.
-update_fw_if_not_oem
 
 # Decrease loglevels for prevent flooding kernel messages to console
 sysctl_conf set 'kernel.printk' '4 4 1 7'
