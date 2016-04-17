@@ -6,12 +6,13 @@ attributes:
     type: "checkbox"
     description: |
               If selected, a Neutron SR-IOV driver will be configured to enable SR-IOV capabilities using Neutron direct port.
+              This feature is only supported if the intel_iommu=on parameter is appended to the kernel parameters.
               In case the NEO SDN driver is not used for private network VLAN provisioning:
-              * In Ethernet mode, the switch side ports must be pre-configured with the required VLAN range
-              * In InfinBand mode, the Subnet Manager partitions.conf file must include the private network conversions of VLAN to PKey
+              * When in Ethernet mode, the switch side ports must be pre-configured with the required VLAN range
+              * When in InfinBand mode, the Subnet Manager partitions.conf file must include the private network conversions of VLAN to PKey
     restrictions:
-      - condition: "settings:common.libvirt_type.value != 'kvm' or not (cluster:net_provider == 'neutron' and networking_parameters:segmentation_type == 'vlan')"
-        message: "For Mellanox SR-IOV support in Neutron, hypervisor type should be KVM and the environment networking should be based on Neutron with VLAN segmentation."
+      - condition: "settings:common.libvirt_type.value != 'kvm' or not ('intel_iommu=on' in settings:kernel_params.kernel.value) or not (cluster:net_provider == 'neutron' and networking_parameters:segmentation_type == 'vlan')"
+        message: "For Mellanox SR-IOV support in Neutron, the hypervisor type should be KVM, the environment networking should be based on Neutron with VLAN segmentation and the intel_iommu=on parameter should be appended to the kernel parameters."
   num_of_vfs:
     value: "16"
     label: "Number of virtual NICs"
@@ -103,5 +104,5 @@ attributes:
     weight: 60
     type: "checkbox"
     restrictions:
-      - condition: "settings:storage.volumes_lvm.value != true or settings:common.libvirt_type.value != 'kvm'"
-        message: "For iSER support in Cinder, Cinder LVM over iSCSI should be enabled and hypervisor type should be KVM."
+      - condition: "settings:storage.volumes_lvm.value != true or settings:common.libvirt_type.value != 'kvm' or not ('intel_iommu=on' in settings:kernel_params.kernel.value)"
+        message: "For iSER support in Cinder, Cinder LVM over iSCSI should be enabled, the hypervisor type should be KVM and the intel_iommu=on parameter should be appended to the kernel parameters."
