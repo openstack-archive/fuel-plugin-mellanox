@@ -278,21 +278,28 @@ function set_sriov () {
     logger_print error "Failed to find mlx5 up ports in ibdev2netdev."
     exit 1
   else
-    res=`echo 0 > /sys/class/net/${device_up}/device/mlx5_num_vfs`
-    res=`echo ${TOTAL_VFS} > /sys/class/net/${device_up}/device/mlx5_num_vfs`
-    if [ ! $? -eq 0 ]; then
-      logger_print error "Failed to write $TOTAL_VFS > /sys/class/net/${device_up}/device/mlx5_num_vfs"
-      exit 1
-    fi
-    echo "#!/bin/bash" > /etc/network/if-up.d/sriov_vfs
-    echo "echo ${TOTAL_VFS} > /sys/class/net/${device_up}/device/mlx5_num_vfs" >> /etc/network/if-up.d/sriov_vfs
-    chmod +x /etc/network/if-up.d/sriov_vfs
-    ifup --all
-    if [ ! $? -eq 0 ]; then
-      logger_print error "Failed to write $TOTAL_VFS > /sys/class/net/${device_up}/device/mlx5_num_vfs"
-      exit 1
-    else
-      logger_print debug "Configured total vfs ${TOTAL_VFS} on ${device_up}"
+    if [ "$(lspci | grep -i mellanox | grep -i virtual | wc -l)" -ne "$TOTAL_VFS" ]; then
+      res=`echo 0 > /sys/class/net/${device_up}/device/mlx5_num_vfs`
+      res=`echo ${TOTAL_VFS} > /sys/class/net/${device_up}/device/mlx5_num_vfs`
+      if [ ! $? -eq 0 ]; then
+        logger_print error "Failed to write $TOTAL_VFS > /sys/class/net/${device_up}/device/mlx5_num_vfs"
+        exit 1
+      fi
+
+      echo "#!/bin/bash" > /etc/network/if-up.d/sriov_vfs
+      echo "if ! lspci | grep -i mellanox | grep -i virtual; then" >> /etc/network/if-up.d/sriov_vfs
+      echo "echo ${TOTAL_VFS} > /sys/class/net/${device_up}/device/mlx5_num_vfs" >> /etc/network/if-up.d/sriov_vfs
+      #echo "python /etc/fuel/plugins/mellanox-plugin-*/configure_mellanox_vfs.py" >> /etc/network/if-up.d/sriov_vfs
+      echo "fi" >> /etc/network/if-up.d/sriov_vfs
+      echo "if [ -f /etc/init.d/tgt ]; then /etc/init.d/tgt force-reload; else exit 0; fi" >> /etc/network/if-up.d/sriov_vfs
+      chmod +x /etc/network/if-up.d/sriov_vfs
+      ifup --all
+      if [ ! $? -eq 0 ]; then
+        logger_print error "Failed to write $TOTAL_VFS > /sys/class/net/${device_up}/device/mlx5_num_vfs"
+        exit 1
+      else
+        logger_print debug "Configured total vfs ${TOTAL_VFS} on ${device_up}"
+      fi
     fi
   fi
 }
