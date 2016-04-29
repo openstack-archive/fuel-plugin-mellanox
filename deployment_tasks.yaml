@@ -120,12 +120,21 @@
 # Enable QoS if required
 - id: configure_qos
   role: '*'
-  required_for: [remove_blocking_iptable_roles]
+  required_for: [configure_vfs_macs]
   requires: [validate_sriov]
   type: shell
   parameters:
     cmd: ./configure_qos.sh configure
     timeout: 200
+# set MAC address to VFs which dont have
+- id: configure_vfs_macs
+  role: '*'
+  required_for: [remove_blocking_iptable_roles]
+  requires: [configure_qos]
+  type: shell
+  parameters:
+    cmd: ./configure_mellanox_vfs.py
+    timeout: 300
 # This is a workaround: disable wrong rules in CentOS IBP #1458832.
 - id: remove_blocking_iptable_roles
   role: '*'
