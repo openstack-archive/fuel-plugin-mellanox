@@ -99,9 +99,6 @@ if [ $PROBED_PORT_NAME != $ISER_NAME ]; then
   udevadm trigger
   modprobe mlx4_en
   modprobe mlx5_ib && modprobe mlx5_core
-  echo "#!/bin/bash" > /etc/network/if-up.d/iser_ifc
-  echo "ifconfig $ISER_NAME up " >> /etc/network/if-up.d/iser_ifc
-  ifup --all
 
   if [ $? -ne 0 ]; then
     logger_print error "Mellanox drivers restart failed."

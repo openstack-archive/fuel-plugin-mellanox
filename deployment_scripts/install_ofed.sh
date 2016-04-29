@@ -119,6 +119,11 @@ function enable_eipoib (){
   fi
 }
 
+function install_gawk (){
+  apt-get -y install gawk
+
+}
+
 if ! is_ofed_installed; then
   # Install mlnx-ofed-fuel rpm/deb package which extracts OFED installation dir
   install_mlnx_ofed_src
@@ -132,6 +137,10 @@ if ! is_ofed_installed; then
 
   # Enable Ethernet IP Over Infiniband in case of eth_ipoib driver
   enable_eipoib
+
+  # Install gawk package for running ibdev2netdev -v
+  install_gawk
+
 fi
 
 # Decrease loglevels for prevent flooding kernel messages to console
