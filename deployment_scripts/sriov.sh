@@ -286,6 +286,8 @@ function set_sriov () {
     fi
     echo "#!/bin/bash" > /etc/network/if-up.d/sriov_vfs
     echo "echo ${TOTAL_VFS} > /sys/class/net/${device_up}/device/mlx5_num_vfs" >> /etc/network/if-up.d/sriov_vfs
+    echo "python /etc/fuel/plugins/mellanox-plugin-*/configure_mellanox_vfs.py" >> /etc/network/if-up.d/sriov_vfs
+    echo "if [ -f /etc/init.d/tgt ]; then /etc/init.d/tgt force-reload; else exit 0; fi" >> /etc/network/if-up.d/sriov_vfs
     chmod +x /etc/network/if-up.d/sriov_vfs
     ifup --all
     if [ ! $? -eq 0 ]; then
