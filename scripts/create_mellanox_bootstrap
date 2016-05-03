@@ -19,26 +19,19 @@ import os
 import time
 import subprocess
 import sys
+import argparse
 
-# Verify input
-if len(sys.argv) > 1 and (sys.argv[1] == 'eth' or sys.argv[1] == 'ib' or \
-                          sys.argv[1] == 'default_link_type' ):
-    if 'default_link_type' in sys.argv[1]:
-        link_type = 'eth'
-    else:
-        link_type = "_%s" % sys.argv[1]
-elif len(sys.argv) == 1:
-    link_type = ""
+parser = argparse.ArgumentParser()
+parser.add_argument("--link_type", help="could be eth, ib, current",choices=['eth', 'ib', 'current'])
+args = parser.parse_args()
+if not args.link_type:
+    parser.print_help()
+    sys.exit(1)
 else:
-    basename = os.path.basename(sys.argv[0])
-    print "Wrong usage."
-    print "Usage: %s <link_type>" % basename
-    print "  Valid link type: eth,ib"
-    print "  option 1: %s" % basename
-    print "  option 2: %s eth" % basename
-    print "  option 3: %s ib" % basename
-    print "  option 4: %s default_link_type" % basename
-    exit(1)
+    if 'current' in args.link_type:
+        link_type=""
+    else:
+        link_type = "_{0}".format(args.link_type)
 
 # Set variables
 plugin = subprocess.Popen("echo /var/www/nailgun/plugins/mellanox-plugin-*/ " +
@@ -61,16 +54,7 @@ with open("/etc/fuel-bootstrap-cli/fuel_bootstrap_cli.yaml", 'r') as stream:
                                              'section': None,
                                              'type': 'deb',
                                              'uri': plugin_uri})
-        override = True
-
-    # Verify SR-IOV capabilities
-    if 'intel_iommu=on' not in fuel_bootstrap_config['extend_kopts']:
-        fuel_bootstrap_config['extend_kopts'] = fuel_bootstrap_config['extend_kopts'] \
-                                                + ' intel_iommu=on'
-        override = True
-
-    # Override fuel bootstrap yaml if needed
-    if override:
+        # Override fuel bootstrap yaml
         with open("/etc/fuel-bootstrap-cli/fuel_bootstrap_cli.yaml", "w") as f:
             yaml.dump(fuel_bootstrap_config, f)
 

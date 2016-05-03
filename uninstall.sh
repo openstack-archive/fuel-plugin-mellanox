@@ -1,3 +1,5 @@
+EXTRA_SCRIPTS="/sbin/reboot_bootstrap_node
+               /sbin/create_mellanox_bootstrap"
 
 # Verify run is over Fuel Master and we are not During upgrade
 if [ -d $FUEL_BOOTSTRAP_DIR ] && [ $1 -eq 0 ]; then
@@ -16,13 +18,10 @@ if [ -d $FUEL_BOOTSTRAP_DIR ] && [ $1 -eq 0 ]; then
     mv $ORIG_BOOTSTRAP_CLI_YAML $BOOTSTRAP_CLI_YAML
   fi
 
-  # Remove extra scripts
-  if [ -f "/sbin/reboot_bootstrap_nodes" ]; then
-    \rm /sbin/reboot_bootstrap_nodes
-  fi
-
-  if [ -f "/sbin/create_mellanox_vpi_bootstrap" ]; then
-    \rm /sbin/create_mellanox_vpi_bootstrap
-  fi
-
+  for script in $EXTRA_SCRIPTS; do
+    # Remove extra scripts
+    if [ -e $script ]; then
+      \rm $script
+    fi
+  done
 fi
