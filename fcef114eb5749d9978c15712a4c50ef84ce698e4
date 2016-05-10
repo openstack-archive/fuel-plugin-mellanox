@@ -1,0 +1,8 @@
+Code-Review+2: Moshe Levi <moshele@mellanox.com>
+Workflow+1: Moshe Levi <moshele@mellanox.com>
+Verified+2: Jenkins
+Submitted-by: Jenkins
+Submitted-at: Tue, 10 May 2016 06:59:24 +0000
+Reviewed-on: https://review.openstack.org/311608
+Project: openstack/fuel-plugin-mellanox
+Branch: refs/heads/master
