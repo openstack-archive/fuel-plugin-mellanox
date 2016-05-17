@@ -23,7 +23,7 @@ import argparse
 import textwrap 
 
 parser = argparse.ArgumentParser(
-         prog='PROG',
+         prog=os.path.basename(sys.argv[0]),
          formatter_class=argparse.RawDescriptionHelpFormatter,
          description=textwrap.dedent('''\
              Available link_type values are:
