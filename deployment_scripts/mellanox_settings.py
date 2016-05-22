@@ -118,8 +118,8 @@ class MellanoxSettings(object):
               else:
                   mlnx['cx_card'] = 'ConnectX-3'
 
-          network_info_msg = 'Detected Network Type is: %s ', mlnx['network_type']
-          card_info_msg = 'Detected Card Type is: %s ', mlnx['cx_card']
+          network_info_msg = 'Detected Network Type is: {0} '.format(mlnx['network_type'])
+          card_info_msg = 'Detected Card Type is: {0} '.format(mlnx['cx_card'])
           logging.info(network_info_msg)
           logging.info(card_info_msg)
 
