@@ -40,16 +40,6 @@
   parameters:
     cmd: ./link_astute_file.sh
     timeout: 10
-# Add relevant settings for Mellanox manifests to mellanox plugin section in
-# Hiera, to make the data easily accessible and independent of astute.yaml
-- id: customize_mellanox_hiera
-  role: '*'
-  required_for: [validate_kernel_devel]
-  requires: [link_astute_file]
-  type: shell
-  parameters:
-    cmd: ./mellanox_settings.py
-    timeout: 100
 # Verify kernel-devel packages are installed (if CentOS)
 - id: validate_kernel_devel
   role: '*'

@@ -99,24 +99,22 @@ function install_ofed_without_fw_update () {
 }
 
 function enable_eipoib (){
-  if [ $NETWORK_TYPE == 'infiniband' ]; then
-    sed -i s/^E_IPOIB_LOAD.*$/E_IPOIB_LOAD=yes/g /etc/infiniband/openib.conf
+  sed -i s/^E_IPOIB_LOAD.*$/E_IPOIB_LOAD=yes/g /etc/infiniband/openib.conf
 
-    # Set Buffers size
-    if [ -f /etc/modprobe.d/ib_ipoib.conf ];then
-      sed -i s/^.*queue_size.*$//g /etc/modprobe.d/ib_ipoib.conf
-    fi
-    if [[ $ROLE == *controller* ]];then
-      buffer_size=32
-    else
-      buffer_size=128
-    fi
-    echo "options ib_ipoib recv_queue_size=$buffer_size send_queue_size=$buffer_size" > /etc/modprobe.d/ipoib.conf
-
-    # Use fixed MLNX_OFED scripts
-    \cp -f ./ipoibd /sbin/ipoibd
-    \cp -f ./openibd /etc/init.d/openibd
+  # Set Buffers size
+  if [ -f /etc/modprobe.d/ib_ipoib.conf ];then
+    sed -i s/^.*queue_size.*$//g /etc/modprobe.d/ib_ipoib.conf
   fi
+  if [[ $ROLE == *controller* ]];then
+    buffer_size=32
+  else
+    buffer_size=128
+  fi
+  echo "options ib_ipoib recv_queue_size=$buffer_size send_queue_size=$buffer_size" > /etc/modprobe.d/ipoib.conf
+
+  # Use fixed MLNX_OFED scripts
+  \cp -f ./ipoibd /sbin/ipoibd
+  \cp -f ./openibd /etc/init.d/openibd
 }
 
 if ! is_ofed_installed; then
