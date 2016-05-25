@@ -22,6 +22,6 @@ if [[ $glance_line == *mellanox* ]]; then
   nova boot --flavor m1.tiny --image $SRIOV_IMAGE --nic port-id=$port_id "sriov_vm-$port_id"
   exit 0
 else
-  echo "No Mellanox SR-IOV cirros found. Please use 'upload_sriov_cirros' script"
+  echo "No Mellanox SR-IOV cirros found. Please use 'upload_sriov_image' script"
   exit 1
 fi
