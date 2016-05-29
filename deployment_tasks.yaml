@@ -34,7 +34,7 @@
 # this script links astute.yaml to any <role>.yaml on each node.
 - id: link_astute_file
   role: '*'
-  required_for: [customize_mellanox_hiera]
+  required_for: [validate_kernel_devel]
   requires: [init_mlnx_logs]
   type: shell
   parameters:
@@ -44,7 +44,7 @@
 - id: validate_kernel_devel
   role: '*'
   required_for: [install_mlnx_ofed]
-  requires: [customize_mellanox_hiera]
+  requires: [link_astute_file]
   type: puppet
   parameters:
     puppet_manifest: puppet/manifests/verify_kernel_devel.pp
@@ -53,7 +53,7 @@
 # Install OFED + FW upgrade
 - id: install_mlnx_ofed
   role: '*'
-  required_for: [customize_mellanox_hiera_post]
+  required_for: [customize_mellanox_hiera]
   requires: [validate_kernel_devel]
   type: shell
   parameters:
@@ -61,7 +61,7 @@
     timeout: 5000
 # Add relevant settings for Mellanox manifests to mellanox plugin section in
 # Hiera, to make the data easily accessible and independent of astute.yaml
-- id: customize_mellanox_hiera_post
+- id: customize_mellanox_hiera
   role: '*'
   required_for: [configure_vxlan_offload]
   requires: [install_mlnx_ofed]
@@ -73,7 +73,7 @@
 - id: configure_vxlan_offload
   role: '*'
   required_for: [configure_sriov]
-  requires: [customize_mellanox_hiera_post]
+  requires: [customize_mellanox_hiera]
   type: shell
   parameters:
     cmd: ./vxlan_offloading.sh configure
