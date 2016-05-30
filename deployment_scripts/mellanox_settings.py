@@ -22,6 +22,7 @@ import glob
 import logging
 import traceback
 
+MAX_NUM_VFS = 16
 MLNX_SECTION = 'mellanox-plugin'
 SETTINGS_FILE = '/etc/astute.yaml'
 PLUGIN_OVERRIDE_FILE = '/etc/hiera/override/plugins.yaml'
@@ -292,7 +293,23 @@ class MellanoxSettings(object):
         return cls.get_mlnx_section()['vxlan_offloading']
 
     @classmethod
+    def add_reboot_condition(cls):
+        # if MAX_NUM_VF > default which is 16, reboot
+        mst_start = os.popen('mst start;').readlines()
+        l = list()
+        devices = os.popen('mst status -v| grep pciconf | awk \'{print $2}\'').readlines()
+        for dev in devices:
+            num = os.popen('mlxconfig -d {0} q | grep NUM_OF_VFS | awk \'{{print $2}}\' '.format(dev.rsplit()[0])).readlines()
+            l.append(num[0].rsplit()[0])
+        burned_num_vfs = list(set(l))[0]
+        if burned_num_vfs > MAX_NUM_VFS :
+           mlnx = cls.get_mlnx_section()
+           mlnx['reboot_required'] = True
+
+    @classmethod
     def update_role_settings(cls):
+        # fill reboot condition
+        cls.add_reboot_condition()
         # detect ConnectX card
         cls.add_cx_card()
         # realize the driver in use (eth/ib)

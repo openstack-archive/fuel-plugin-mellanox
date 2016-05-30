@@ -178,7 +178,20 @@ function burn_vfs_in_fw () {
     service mst stop &>/dev/null
   fi
   if [ $CX == 'ConnectX-4' ]; then
-    logger_print debug "Skipping burning ConnectX-4 as it is burnt in bootstrap stage."
+    current_num_of_vfs=`mlxconfig -d $dev q | grep NUM_OF_VFS | awk '{print $2}'`
+    if [ "$total_vfs" -gt "$current_num_of_vfs" ]; then
+      # required for mlxconfig to discover mlnx devices
+      service openibd start &>/dev/null
+      service mst start &>/dev/null
+      devices=$(mst status -v | grep $CX| grep pciconf | awk '{print $2}')
+      for dev in $devices; do
+        logger_print debug "device=$dev"
+        logger_print debug "Trying mlxconfig -d ${dev} -y set NUM_OF_VFS=${total_vfs}"
+        mlxconfig -d $dev -y set NUM_OF_VFS=$total_vfs
+        logger_print debug "Resetting device ${dev}"
+        mlxfwreset --device $dev -y reset
+      done
+    fi
   fi
 }
 
