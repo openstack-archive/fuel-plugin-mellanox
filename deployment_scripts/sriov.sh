@@ -178,7 +178,20 @@ function burn_vfs_in_fw () {
     service mst stop &>/dev/null
   fi
   if [ $CX == 'ConnectX-4' ]; then
-    logger_print debug "Skipping burning ConnectX-4 as it is burnt in bootstrap stage."
+    current_num_of_vfs=`mlxconfig -d $dev q | grep NUM_OF_VFS | awk '{print $2}'`
+    if [ "$total_vfs" -gt "$current_num_of_vfs" ]; then
+      # required for mlxconfig to discover mlnx devices
+      service openibd start &>/dev/null
+      service mst start &>/dev/null
+      devices=$(mst status -v | grep $CX| grep pciconf | awk '{print $2}')
+      for dev in $devices; do
+        logger_print debug "device=$dev"
+        logger_print debug "Trying mlxconfig -d ${dev} -y set NUM_OF_VFS=${total_vfs}"
+        mlxconfig -d $dev -y set NUM_OF_VFS=$total_vfs
+        logger_print debug "Resetting device ${dev}"
+        mlxfwreset --device $dev -y reset
+      done
+    fi
   fi
 }
 
@@ -279,6 +292,7 @@ function set_sriov () {
     exit 1
   else
     if [ "$(lspci | grep -i mellanox | grep -i virtual | wc -l)" -ne "$TOTAL_VFS" ]; then
+      for sbdff in `lspci | grep "ConnectX-4 Virtual Function" | cut -d" " -f 1` ; do echo "0000:$sbdff" > /sys/bus/pci/drivers/mlx5_core/unbind ;done
       res=`echo 0 > /sys/class/net/${device_up}/device/mlx5_num_vfs`
       res=`echo ${TOTAL_VFS} > /sys/class/net/${device_up}/device/mlx5_num_vfs`
       if [ ! $? -eq 0 ]; then
@@ -294,6 +308,8 @@ function set_sriov () {
       echo "#!/bin/bash" > $persistent_ifup_script
       chmod +x $persistent_ifup_script
       echo "if ! lspci | grep -i mellanox | grep -i virtual; then" >> $persistent_ifup_script
+      echo 'for sbdff in `lspci | grep "ConnectX-4 Virtual Function" | cut -d" " -f 1` ; do echo "0000:$sbdff" > /sys/bus/pci/drivers/mlx5_core/unbind ;done' >> $persistent_ifup_script
+      echo "echo 0 > /sys/class/net/${device_up}/device/mlx5_num_vfs" >> $persistent_ifup_script
       echo "echo ${TOTAL_VFS} > /sys/class/net/${device_up}/device/mlx5_num_vfs" >> $persistent_ifup_script
       echo "python /etc/fuel/plugins/mellanox-plugin-*/configure_mellanox_vfs.py ${TOTAL_VFS}" >> $persistent_ifup_script
       echo "fi" >> $persistent_ifup_script

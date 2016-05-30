@@ -23,6 +23,9 @@ if [ ! -z $1 ]; then
   sed -i "1a\export LINK_TYPE=$1" /etc/rc.local
 fi
 
+# Set MAX_NUM_VFS to run on boot
+sed -i "1a\export MAX_NUM_VFS=$MAX_NUM_VFS" /etc/rc.local
+
 # Install required packages
 dpkg -i ${OFED_DEBS_DIR}/mlnx-ofed-kernel-utils*.deb
 dpkg -i ${OFED_DEBS_DIR}/mlnx-ofed-kernel-dkms*.deb
