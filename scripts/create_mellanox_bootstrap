@@ -22,6 +22,9 @@ import sys
 import argparse
 import textwrap
 
+# Load the defaults
+DEFAULT_MAX_NUM_VFS = 16
+
 parser = argparse.ArgumentParser(
          prog=os.path.basename(sys.argv[0]),
          formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -33,6 +36,8 @@ parser = argparse.ArgumentParser(
                 - current for leaving link type as is
              '''))
 parser.add_argument("--link_type", choices=['eth', 'ib', 'current'])
+parser.add_argument("--max_num_vfs", type=int, default = DEFAULT_MAX_NUM_VFS,
+                    help='an integer for the maximum number of vfs to be burned in bootstrap')
 
 args = parser.parse_args()
 if not args.link_type:
@@ -43,6 +48,8 @@ else:
         link_type=""
     else:
         link_type = "_{0}".format(args.link_type)
+
+os.environ['MAX_NUM_VFS'] = '{0}'.format(args.max_num_vfs)
 
 # Set variables
 plugin = subprocess.Popen("echo /var/www/nailgun/plugins/mellanox-plugin-*/ " +

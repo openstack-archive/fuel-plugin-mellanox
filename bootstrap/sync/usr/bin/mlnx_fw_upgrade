@@ -15,7 +15,7 @@
 # limitations under the License.
 
 # Set defaults
-MAX_VFS=16
+MAX_VFS=$MAX_NUM_VFS
 LOG_FILE=/var/log/mlnx_fw_update.log
 OFED_DEBS_DIR=/opt/ofed/MLNX_OFED/DEBS/
 
