@@ -40,8 +40,8 @@ if ([[ $ROLES == *compute* ]] && [[ ! $ROLES == "compute" ]]) \
     fi
   fi
   if [ $CX == 'ConnectX-4' ]; then
+    for sbdff in `lspci | grep "ConnectX-4 Virtual Function" | cut -d" " -f 1` ; do echo "0000:$sbdff" > /sys/bus/pci/drivers/mlx5_core/unbind ;done
     service openibd restart && service openvswitch-switch restart
-    #sleep 10
   fi
   # Verify VFs
   ./sriov.sh validate

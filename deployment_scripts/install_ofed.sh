@@ -142,6 +142,7 @@ fi
 
 # Decrease loglevels for prevent flooding kernel messages to console
 sysctl_conf set 'kernel.printk' '4 4 1 7'
+for sbdff in `lspci | grep "ConnectX-4 Virtual Function" | cut -d" " -f 1` ; do echo "0000:$sbdff" > /sys/bus/pci/drivers/mlx5_core/unbind ;done
 service openibd stop
 service openibd start
 
