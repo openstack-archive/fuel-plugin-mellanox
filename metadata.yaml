@@ -5,7 +5,7 @@ name: mellanox-plugin
 title: Mellanox ConnectX-4 Openstack Features
 
 # Plugin version
-version: 3.1.12
+version: 3.1.13
 
 # Description
 description: Enable features over Mellanox ConnectX-4 Adapters
