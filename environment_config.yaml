@@ -26,6 +26,14 @@ attributes:
       - condition: "settings:mellanox-plugin.sriov.value == false"
         message: "In order to change the number of virtual NICs, Neutron SR-IOV plugin should be checked."
 
+  reboot_required:
+    value: false
+    label: "Reboot when maximum number of vfs configured by the user is greater than the one burned in FW."
+    description: |
+               Reboots Slave nodes if the maximum number of vfs configured by the user is greator than the number burned in FW.
+    weight: 30
+    type: hidden
+
   mlnx_qos:
     value: false
     label: "Quality of Service over Mellanox SR-IOV ports (Neutron)"
