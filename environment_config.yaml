@@ -78,13 +78,13 @@ attributes:
         message: "In order to insert NEO SDN Controller password, Mellanox NEO auto VLAN provisioning has to be checked."
 
   vxlan_offloading:
-    value: false
+    value: true
     label: "VXLAN Offloading (Neutron)"
     description: |
                If selected, Mellanox hardware will be used to achieve a better performance and significant CPU overhead reduction
                using VXLAN traffic offloading. This feature is supported in Ethernet mode over Neutron with tunneling.
     weight: 50
-    type: "checkbox"
+    type: hidden
     restrictions:
       - condition: "not (cluster:net_provider == 'neutron' and networking_parameters:segmentation_type == 'tun')"
         message: "For VXLAN offloading, network should be neutron with tunnling segmentation."
