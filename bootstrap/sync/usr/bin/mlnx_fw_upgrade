@@ -51,7 +51,8 @@ fi
 if which mst; then
   echo "Enabling SR-IOV in FW" >> $LOG_FILE
   mst start >> $LOG_FILE
-  mlxconfig -d /dev/mst/mt4115_pciconf0 q |grep -q SRIOV_EN
+  dev=`mst status | grep 411 | awk '{print $1}'`
+  mlxconfig -d $dev q |grep -q SRIOV_EN
   if [ $? -ne 0 ]; then
     echo "Problem accessing FW configurations, skipping FW configurations." >> $LOG_FILE
     exit 0
@@ -61,21 +62,21 @@ if which mst; then
 
   # Verify link type (if forced)
   if $FORCE_LINK_TYPE; then
-    mlxconfig -d /dev/mst/mt4115_pciconf0 q | grep LINK_TYPE_P1 | awk '{print $2}' | \
+    mlxconfig -d $dev q | grep LINK_TYPE_P1 | awk '{print $2}' | \
                  grep $LINK_TYPE &> /dev/null
     if [ $? -ne 0 ]; then
       echo "Setting Link type as $LINK_TYPE in FW" >> $LOG_FILE
-      mlxconfig -d /dev/mst/mt4115_pciconf0 -y set LINK_TYPE_P1=$LINK_TYPE \
+      mlxconfig -d $dev -y set LINK_TYPE_P1=$LINK_TYPE \
                    LINK_TYPE_P2=$LINK_TYPE >> $LOG_FILE
       reset_fw=true
     fi
   fi
 
   # Verify MAX VFs num
-  mlxconfig -d /dev/mst/mt4115_pciconf0 q | grep NUM_OF_VFS | grep $MAX_VFS &> /dev/null
+  mlxconfig -d $dev q | grep NUM_OF_VFS | grep $MAX_VFS &> /dev/null
   if [ $? -ne 0 ]; then
     echo "Setting max VFs to $MAX_VFS in FW" >> $LOG_FILE
-    mlxconfig -d /dev/mst/mt4115_pciconf0 -y set SRIOV_EN=1 NUM_OF_VFS=$MAX_VFS \
+    mlxconfig -d $dev -y set SRIOV_EN=1 NUM_OF_VFS=$MAX_VFS \
                  VF_LOG_BAR_SIZE=1 NUM_VF_MSIX=4 >> $LOG_FILE
     reset_fw=true
   fi
@@ -83,7 +84,7 @@ if which mst; then
   # Reset ConnectX-4 FW
   if $reset_fw; then
     echo "Reset FW on MLNX Card" >> $LOG_FILE
-    mlxfwreset --device /dev/mst/mt4115_pciconf0 -y reset >> $LOG_FILE
+    mlxfwreset --device $dev -y reset >> $LOG_FILE
     for i in $(ibdev2netdev |grep mlx5 |grep -i down |awk '{print $5}')
     do
       ifconfig $i up;
