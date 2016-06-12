@@ -44,7 +44,7 @@ if [ $? -ne 0 ]; then
   echo "Not Mellanox Card or a NIC access problem. skipping firmware upgrade." >> $LOG_FILE
 else # Not OEM
   echo "Starting FW upgrade" >> $LOG_FILE
-  dpkg -i /opt/ofed/MLNX_OFED/DEBS/mlnx-fw-updater*.deb >> $LOG_FILE
+  /opt/ofed/MLNX_OFED/mlnxofedinstall --fw-update-only >> $LOG_FILE
 fi
 
 # Set ConnectX-4 FW
