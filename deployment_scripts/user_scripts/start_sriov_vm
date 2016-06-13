@@ -14,14 +14,57 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+usage() {
+  echo "Usage: `basename $0` [-f vm_flavor | -h]"
+  echo "    This script is used to start a VM with a flavor using SR-IOV image."
+  echo "    before starting the VM, make sure the SRIOV image is uploaded,"
+  echo "    please use upload_sriov_image script."
+
+  echo "
+  Options:
+  -h           Display the help message.
+  -f <flavor>  Create <flavor> SR-IOV VM with direct port.
+  "
+}
+
+while getopts ":f:h" opt; do
+  case $opt in
+    h)
+      usage
+      exit 0
+      ;;
+    f)
+      flavor="${OPTARG}"
+      logger_print info "SRIOV image flavor $flavor"
+      ;;
+    [?])
+      usage
+      exit 1
+      ;;
+  esac
+done
+
+if [ -z $flavor ]
+then
+    echo "ERROR: -f or -h must be included when a calling this script" >&2
+    usage
+    exit 1
+fi
+
 . /root/openrc
 glance_line=`glance image-list | grep mellanox`
 if [[ $glance_line == *mellanox* ]]; then
   SRIOV_IMAGE=`echo $glance_line | head -n 1 | awk '{print $2}'`
   port_id=`neutron port-create admin_internal_net --name sriov_port --vnic-type direct | grep " id " | awk '{print $4}'`
-  nova boot --flavor m1.tiny --image $SRIOV_IMAGE --nic port-id=$port_id "sriov_vm-$port_id"
-  exit 0
+  nova boot --flavor ${flavor} --image $SRIOV_IMAGE --nic port-id=$port_id "sriov_vm-$port_id"
+  if [ $? -ne 0 ]; then
+    logger_print error "Starting VM with SR-IOV support failed."
+    exit 1
+  else
+    logger_print info "SR-IOV VM was successfully started."
+    exit 0
+  fi
 else
-  echo "No Mellanox SR-IOV cirros found. Please use 'upload_sriov_cirros' script"
+  echo "No Mellanox SR-IOV image was found. Please use 'upload_sriov_image' script"
   exit 1
 fi
