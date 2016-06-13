@@ -12,7 +12,8 @@ if [ -d $FUEL_BOOTSTRAP_DIR ]; then
 
   # Print post install message
   echo "  `tput bold`In order to create Bootstrap discovery image for detecting Mellanox Infiniband HW:"
-  echo "    1. Please build a new bootstrap ('create_mellanox_bootstrap [--link_type] [-h, --help] can be used')."
+  echo "    1. Please build a new bootstrap ('create_mellanox_bootstrap [-h] [--link_type {eth,ib,current}] [--max_num_vfs MAX_NUM_VFS]')"
+
   echo "    2. Please reboot your old bootstrap nodes"
   echo "       ('reboot_bootstrap_nodes [-e environment_id] [-a] [-h]' can be used).`tput sgr0`"
 
