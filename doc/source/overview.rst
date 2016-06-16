@@ -8,8 +8,8 @@ Mellanox plugin
 | The Mellanox Fuel plugin is a bundle of scripts, packages and metadata that will extend Fuel
  and add Mellanox features such as SR-IOV for networking and iSER protocol for storage.
 
-| Fuel can configure `Mellanox ConnectX-3 Pro
- <http://www.mellanox.com/page/products_dyn?product_family=161&mtag=connectx_3_pro_vpi_card>`_
+| Fuel can configure `Mellanox ConnectX-4 
+ <http://www.mellanox.com/page/products_dyn?product_family=201&mtag=connectx_4_vpi_card>`_
  network adapters to accelerate the performance of compute and storage traffic.
 
 This implements the following performance enhancements:
@@ -42,12 +42,8 @@ Requirements
 | Mirantis OpenStack compatibility  |   8.0           |
 +-----------------------------------+-----------------+
 
-| The Mellanox ConnectX-3 Pro adapters family supports up to 40/56 Gb. To reach 56 Gb speed in
- your network with ConnectX-3 Pro adapters, you must use Mellanox Ethernet / Infiniband switches
- supporting 56 Gb (e.g. SX1710, SX6710). The switch ports should be configured specifically to use
- 56 Gb speed. No additional configuration is required on the adapter side. For additional
- information about how to run in 56GbE speed, see `HowTo Configure 56GbE Link on Mellanox Adapters
- and Switches <http://community.mellanox.com/docs/DOC-1460>`_.
+| The Mellanox ConnectX-4 adapters family supports up to 100 Gb/s. To reach 100 Gb/s speed in your network with ConnectX-4 adapters, you must use Mellanox Ethernet / Infiniband switches supporting 100 Gb (e.g. SN2700 (ETH), SB7700 (IB)). The switch ports should be configured specifically to use 100 Gb speed. No additional configuration is required on the adapter side.  
+
 
 Limitations
 -----------

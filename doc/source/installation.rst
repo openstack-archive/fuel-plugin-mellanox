@@ -24,9 +24,31 @@ To install Mellanox plugin, follow these steps:
    #  ---|-------------------|---------|----------------
    #  1  | mellanox-plugin   | 3.0.0   | 3.0.0
 
-#. Create new bootstrap image for supporting infiniband networks (``create_mellanox_vpi_bootstrap can be used``):::
+#. Define link type:
+   #. ``ib``
+   #. ``eth``
+   #. ``current`` which means leave links as they are.
 
-   [root@fuel ~]# create_mellanox_vpi_bootstrap
+#. Set MAX number of vfs to be set in bootstrap stage as integer, default is set to 16.
+
+#. Create Bootstrap discovery image for detecting Mellanox HW and support related configurations::
+
+   [root@fuel ~]# create_mellanox__bootstrap --link_type $link_type
+   [root@fuel ~]# create_mellanox_bootstrap --help
+   usage: create_mellanox_bootstrap [-h] [--link_type {eth,ib,current}]
+                                 [--max_num_vfs MAX_NUM_VFS]	
+   Available link_type values are:
+   -------------------------------
+   - eth for changing link type to Ethernet
+   - ib for changing link type to Infiniband
+   - current for leaving link type as is
+
+   optional arguments:
+     -h, --help            show this help message and exit
+     --link_type {eth,ib,current}
+     --max_num_vfs MAX_NUM_VFS
+                        an integer for the maximum number of vfs to be burned in bootstrap
+
 
    ::
 
@@ -39,8 +61,20 @@ To install Mellanox plugin, follow these steps:
      . . .
      Bootstrap image f790e9f8-5bc5-4e61-9935-0640f2eed949 has been activated.
 
-#. In case of using the customized bootstrap image, you must reboot your target nodes with the new bootstrap image you just created.
-   If you already have discovered nodes you can either reboot them manually or use :bash: `reboot_bootstrap_nodes` command.  Run :bash: `reboot_bootstrap_nodes -h` for help.
+#. Reboot nodes after installing plugin::
+   [root@fuel ~]# reboot_bootstrap_nodes –a
+   [root@fuel ~]# reboot_bootstrap_nodes -h
+   Usage: reboot_bootstrap_nodes [-e environment_id] [-h] [-a]
+      This script is used to trigger reboot for nodes in 'discover' status,
+      of a given environment (if given) or of all environments.
+      Please wait for nodes to boot again after triggering this script.
+
+   Options:
+
+   -h         Display the help message.
+   -e <env>   Reboot all nodes in state 'discover' of the given environment.
+   -a         Reboot all nodes in state 'discover' of all environments.
+
 
 #. Create an environment - for more information please see `how to create an environment <https://docs.mirantis.com/openstack/fuel/fuel-8.0/user-guide.html>`_.
    We support both main network configurations:
@@ -50,6 +84,12 @@ To install Mellanox plugin, follow these steps:
 
    .. image:: ./_static/ml2_driver.png
    .. :alt: Network Configuration Type
+
+#. Adjust the kernal parameters in the settings tab which is a condition for both iSER and SRIOV.
+   Open the Settings tab, select General section and then add ``intel_iommu=on`` at the beginning of the initial parameters. 
+
+   .. image:: ./_static/kernal_parameters.png
+   .. :alt: Hypervisor Type
 
 #. Enable KVM hypervisor type. KVM is required to enable Mellanox Openstack features.
    Open the Settings tab, select Compute section and then choose KVM hypervisor type.
@@ -132,7 +172,7 @@ To install Mellanox plugin, follow these steps:
 
 #. In Ethernet cloud, when using SR-IOV & iSER, one of the virtual NICs for SR-IOV will be reserved to the storage network.
 
-#. When using SR-IOV you can set the number of virtual NICs (virtual functions) to up to 62
+#. When using SR-IOV you can set the number of virtual NICs (virtual functions) to up to 31
    if your hardware and system capabilities like memory and BIOS support it).
-   In any case of SR-IOV hardware limitation, the installation will try to fallback a VF number to the default of 8 VFs.
+   In any case of SR-IOV hardware limitation, the installation will try to fallback a VF number to the default of 16 VFs.
 

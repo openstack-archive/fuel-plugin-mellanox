@@ -47,7 +47,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'The Mellanox ConnectX-3 pro plugin for Fuel'
+project = u'The Mellanox ConnectX-4 plugin for Fuel'
 copyright = u'2016, mellanox'
 
 # The version info for the project you're documenting, acts as replacement for
@@ -55,7 +55,7 @@ copyright = u'2016, mellanox'
 # built documents.
 #
 # The short X.Y version.
-version = '3.0'
+version = '3.2'
 # The full version, including alpha/beta/rc tags.
 release = '3.0-3.0.0-1'
 
