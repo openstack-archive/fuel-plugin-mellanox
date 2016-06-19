@@ -41,7 +41,6 @@ if ([[ $ROLES == *compute* ]] && [[ ! $ROLES == "compute" ]]) \
   fi
   if [ $CX == 'ConnectX-4' ]; then
     service openibd restart && service openvswitch-switch restart
-    #sleep 10
   fi
   # Verify VFs
   ./sriov.sh validate
