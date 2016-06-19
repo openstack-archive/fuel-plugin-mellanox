@@ -21,27 +21,20 @@ source ./common
 if ([[ $ROLES == *compute* ]] && [[ ! $ROLES == "compute" ]]) \
     && [ $SRIOV == true ] ; then
 
-  if [ $CX == 'ConnectX-3' ]; then
+  # Update VFs
+  ./sriov.sh configure
 
-    # Update VFs
-    ./sriov.sh configure
-
-    # Kill tgt daemons if exists
-    tgt_locks=`find /var/run/ -name tgtd* | wc -l`
-    if [ $tgt_locks -ne 0 ];then
-      \rm -f /var/run/tgtd* && killall -9 tgtd
-      service tgt stop
-    fi
-
-    service openibd restart && service openvswitch-switch restart
-
-    if [ $tgt_locks -ne 0 ];then
-      service tgt start
-    fi
+  # Kill tgt daemons if exists
+  tgt_locks=`find /var/run/ -name tgtd* | wc -l`
+  if [ $tgt_locks -ne 0 ];then
+    \rm -f /var/run/tgtd* && killall -9 tgtd
+    service tgt stop
   fi
-  if [ $CX == 'ConnectX-4' ]; then
-    service openibd restart && service openvswitch-switch restart
-    #sleep 10
+
+  service openibd restart && service openvswitch-switch restart
+
+  if [ $tgt_locks -ne 0 ];then
+    service tgt start
   fi
   # Verify VFs
   ./sriov.sh validate

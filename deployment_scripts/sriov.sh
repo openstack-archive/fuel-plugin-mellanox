@@ -305,6 +305,7 @@ function set_sriov () {
       echo "#!/bin/bash" > $persistent_ifup_script
       chmod +x $persistent_ifup_script
       echo "if ! lspci | grep -i mellanox | grep -i virtual; then" >> $persistent_ifup_script
+      echo "echo 0 > /sys/class/net/${device_up}/device/mlx5_num_vfs" >> $persistent_ifup_script
       echo "echo ${TOTAL_VFS} > /sys/class/net/${device_up}/device/mlx5_num_vfs" >> $persistent_ifup_script
       echo "python /etc/fuel/plugins/mellanox-plugin-*/configure_mellanox_vfs.py ${TOTAL_VFS}" >> $persistent_ifup_script
       echo "fi" >> $persistent_ifup_script
