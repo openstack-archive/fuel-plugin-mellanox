@@ -20,8 +20,11 @@ import subprocess
 import logging
 import traceback
 import glob
+import time
 
 LOG_FILE = '/var/log/mellanox-plugin.log'
+DRIVER_SLEEP_INTERVAL = 5
+MAX_DRIVER_TRIALS = 5
 
 class MellanoxVfsSettingsException(Exception):
     pass
@@ -156,17 +159,18 @@ class MellanoxVfsSettings(object):
                  sys.exit(1)
 
     @classmethod
-    def wait_for_mlx_modules_and_vfs_loaded(cls, total_vfs):
-        retval = 1
-        while (retval != 0):
-            cmd_lsmod = "lsmod | grep mlx_compat"
-            p_lsmod = subprocess.Popen(cmd_lsmod, shell=True,stdout=subprocess.PIPE,
-                                       stderr=subprocess.STDOUT)
-            retval = p_lsmod.wait()
-        logging.info("mlx_compat module is loaded!")
-
+    def wait_for_vfs_loaded(cls, total_vfs):
+        count = 0
         number_of_vfs = 0
         while ( number_of_vfs != total_vfs):
+            if count == MAX_DRIVER_TRIALS :
+                logging.error("VFs loading timeout: waited for {0}".format(
+                              MAX_DRIVER_TRIALS * DRIVER_SLEEP_INTERVAL) + \
+                              "sec and number of vfs loaded is not correct")
+                sys.exit(1)
+            else:
+                time.sleep(DRIVER_SLEEP_INTERVAL)
+
             cmd_number_vfs = "lspci | grep -i mellanox | grep -i virtual | wc -l"
             p_number_vfs = subprocess.Popen(cmd_number_vfs, shell=True,stdout=subprocess.PIPE,
                                             stderr=subprocess.STDOUT)
@@ -175,6 +179,7 @@ class MellanoxVfsSettings(object):
                 logging.error("Failed to run lspci")
                 sys.exit(1)
             number_of_vfs = int(p_number_vfs.stdout.readlines()[0].rstrip());
+            count += 1
         logging.info("all VFs are loaded.")
 
 def main(total_vfs):
@@ -182,7 +187,7 @@ def main(total_vfs):
                         level=logging.DEBUG, filename=LOG_FILE)
     try:
         vfs_configurations = MellanoxVfsSettings()
-        vfs_configurations.wait_for_mlx_modules_and_vfs_loaded(int(total_vfs))
+        vfs_configurations.wait_for_vfs_loaded(int(total_vfs))
         vfs_configurations.build_vfs_dict()
         vfs_configurations.assign_mac_per_vf()
         vfs_configurations.unbind()
