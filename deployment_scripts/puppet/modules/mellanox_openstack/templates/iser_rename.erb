@@ -99,6 +99,7 @@ if [ $PROBED_PORT_NAME != $ISER_NAME ]; then
   udevadm trigger
   modprobe mlx4_en
   modprobe mlx5_ib && modprobe mlx5_core
+  ifup -a
 
   if [ $? -ne 0 ]; then
     logger_print error "Mellanox drivers restart failed."
