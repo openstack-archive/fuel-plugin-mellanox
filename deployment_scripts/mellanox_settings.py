@@ -304,9 +304,12 @@ class MellanoxSettings(object):
             num = os.popen('mlxconfig -d {0} q | grep NUM_OF_VFS | awk \'{{print $2}}\' \
                             '.format(dev.rsplit()[0])).readlines()
             burned_num_vfs_list.append(num[0].rsplit()[0])
-        burned_num_vfs = list(set(burned_num_vfs_list))[0]
-        if burned_num_vfs > MAX_NUM_VFS or mlnx['num_of_vfs'] > MAX_NUM_VFS :
-           mlnx['reboot_required'] = True
+        burned_num_vfs_set_list = list(set(burned_num_vfs_list))
+        for burned_num_vfs in burned_num_vfs_set_list :
+            if int(burned_num_vfs) < mlnx['num_of_vfs'] :
+                mlnx['reboot_required'] = True
+                logging.info('reboot_required is true as {0} is < {1}'.format(burned_num_vfs,
+                                                                              mlnx['num_of_vfs']))
 
     @classmethod
     def update_role_settings(cls):
