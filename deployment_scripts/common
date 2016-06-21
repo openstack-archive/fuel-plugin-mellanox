@@ -94,3 +94,4 @@ readonly ROLES=`get_param roles`
 readonly ROLE=`get_param role`
 readonly DEBUG=`get_param debug`
 readonly QOS=`get_mlnx_param mlnx_qos`
+readonly REBOOT_REQUIRED=`get_mlnx_param reboot_required`
