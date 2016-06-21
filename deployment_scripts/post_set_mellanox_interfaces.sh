@@ -40,9 +40,9 @@ if ([[ $ROLES == *compute* ]] && [[ ! $ROLES == "compute" ]]) \
     fi
   fi
   if [ $CX == 'ConnectX-4' ]; then
-    service openibd restart && service openvswitch-switch restart
-    #sleep 10
+    logger_print info "Skipping post_set_mellanox_interfaces in ConnectX-4"
   fi
+
   # Verify VFs
   ./sriov.sh validate
 
