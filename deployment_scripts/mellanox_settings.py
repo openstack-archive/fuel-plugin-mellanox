@@ -300,13 +300,25 @@ class MellanoxSettings(object):
         burned_num_vfs_list = list()
         devices = os.popen('mst status -v| grep pciconf | grep {0} | awk \'{{print $2}}\' '.format(
                             mlnx['cx_card'].replace("-",""))).readlines()
-        for dev in devices:
-            num = os.popen('mlxconfig -d {0} q | grep NUM_OF_VFS | awk \'{{print $2}}\' \
-                            '.format(dev.rsplit()[0])).readlines()
-            burned_num_vfs_list.append(num[0].rsplit()[0])
-        burned_num_vfs = list(set(burned_num_vfs_list))[0]
-        if burned_num_vfs > MAX_NUM_VFS or mlnx['num_of_vfs'] > MAX_NUM_VFS :
-           mlnx['reboot_required'] = True
+        if len(devices) > 0:
+            for dev in devices:
+                num = os.popen('mlxconfig -d {0} q | grep NUM_OF_VFS | awk \'{{print $2}}\' \
+                                '.format(dev.rsplit()[0])).readlines()
+                if len(num) > 0:
+                    burned_num_vfs_list.append(num[0].rsplit()[0])
+                else:
+                    logging.error("Failed to grep NUM_OF_VFS from Mellanox card")
+                    sys.exit(1)
+            burned_num_vfs_set_list = list(set(burned_num_vfs_list))
+            for burned_num_vfs in burned_num_vfs_set_list :
+                if int(burned_num_vfs) < int(mlnx['num_of_vfs']) :
+                    mlnx['reboot_required'] = True
+                    logging.info('reboot_required is true as {0} is < {1}'.format(burned_num_vfs,
+                                                                              mlnx['num_of_vfs']))
+                    break;
+        else:
+            logging.error("There are no Mellanox devices with {0} card".format(mlnx['cx_card']))
+            sys.exit(1)
 
     @classmethod
     def update_role_settings(cls):
