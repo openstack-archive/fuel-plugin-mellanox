@@ -22,17 +22,29 @@
 # Log a notice about pre_deployment start
 - id: init_mlnx_logs
   role: '*'
-  required_for: [validate_kernel_devel]
+  required_for: [link_astute_file]
   requires: [setup_repositories_mlnx]
   type: shell
   parameters:
     cmd: ./log_stage.sh mlnx_deployment_start
     timeout: 10
+# This is a workaround: during the plugin pre_deployment stage
+# there is no symbolic link from astute.yaml to <role>.yaml.
+# Since the data that the plugin uses is common to all <role>.yaml files,
+# this script links astute.yaml to any <role>.yaml on each node.
+- id: link_astute_file
+  role: '*'
+  required_for: [validate_kernel_devel]
+  requires: [init_mlnx_logs]
+  type: shell
+  parameters:
+    cmd: ./link_astute_file.sh
+    timeout: 10
 # Verify kernel-devel packages are installed (if CentOS)
 - id: validate_kernel_devel
   role: '*'
   required_for: [install_mlnx_ofed]
-  requires: [init_mlnx_logs]
+  requires: [link_astute_file]
   type: puppet
   parameters:
     puppet_manifest: puppet/manifests/verify_kernel_devel.pp
@@ -92,7 +104,7 @@
   required_for: [validate_sriov]
   requires: [rename_iser_probe_vf]
   type: reboot
-  condition: "settings:mellanox-plugin.reboot_required.value == true"
+  condition: "settings:mellanox-plugin.reboot_required.value != true"
   parameters:
     timeout: 6000
 # Check number of VFs
