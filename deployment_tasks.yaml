@@ -70,31 +70,31 @@
 # change modprobe file + IOMMU in grub file + change VFs num in FW
 - id: configure_sriov
   role: '*'
-  required_for: [rename_iser_probe_vf]
+  required_for: [reboot_after_max_vfs_num_change]
   requires: [configure_vxlan_offload]
   type: shell
   parameters:
     cmd: ./sriov.sh configure
     timeout: 300
+# Reboot due to changing MAX number of VFs
+- id: reboot_after_max_vfs_num_change
+  role: '*'
+  required_for: [rename_iser_probe_vf]
+  requires: [configure_sriov]
+  type: reboot
+  condition: "settings:mellanox-plugin.reboot_required.value == true"
+  parameters:
+    timeout: 6000
 # if VXLAN is not required. Rename iSER interface for Eth mode
 - id: rename_iser_probe_vf
   role: '*'
-  required_for: [reboot_after_max_vfs_num_change]
-  requires: [configure_sriov]
+  required_for: [validate_sriov]
+  requires: [reboot_after_max_vfs_num_change]
   type: puppet
   parameters:
     puppet_manifest: puppet/manifests/iser_rename.pp
     puppet_modules: puppet/modules:/etc/puppet/modules
     timeout: 300
-# Reboot due to changing MAX number of VFs
-- id: reboot_after_max_vfs_num_change
-  role: '*'
-  required_for: [validate_sriov]
-  requires: [rename_iser_probe_vf]
-  type: reboot
-  condition: "settings:mellanox-plugin.reboot_required.value == true"
-  parameters:
-    timeout: 6000
 # Check number of VFs
 - id: validate_sriov
   role: '*'
