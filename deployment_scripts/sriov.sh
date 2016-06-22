@@ -153,7 +153,7 @@ function burn_vfs_in_fw () {
     # required for mlxconfig to discover mlnx devices
     service openibd start &>/dev/null
     service mst start &>/dev/null
-    devices=$(mst status -v | grep $CX| grep pciconf | awk '{print $2}')
+    devices=$(mst status -v | grep $(echo $CX | tr -d '-')| grep pciconf | awk '{print $2}')
     for dev in $devices; do
       logger_print debug "device=$dev"
       mlxconfig -d $dev q | grep SRIOV | awk '{print $2}' | grep $SRIOV_ENABLED_FLAG  &>/dev/null
@@ -181,7 +181,7 @@ function burn_vfs_in_fw () {
     # required for mlxconfig to discover mlnx devices
     service openibd start &>/dev/null
     service mst start &>/dev/null
-    devices=$(mst status -v | grep $CX| grep pciconf | awk '{print $2}')
+    devices=$(mst status -v | grep $(echo $CX | tr -d '-') | grep pciconf | awk '{print $2}')
     for dev in $devices; do
       current_fw_vfs=`mlxconfig -d $dev q | grep NUM_OF_VFS | awk '{print $2}'`
       if [ "$total_vfs" -gt "$current_fw_vfs" ]; then
@@ -269,7 +269,7 @@ function validate_sriov () {
   if [ $CX == 'ConnectX-4' ]; then
     set_sriov $FALLBACK_NUM_VFS
   fi
- 
+
   current_num_vfs=`lspci | grep -i mellanox | grep -i virtual | wc -l`
   if [ $current_num_vfs -eq $FALLBACK_NUM_VFS ]; then
     logger_print info "Fallback to ${FALLBACK_NUM_VFS} succeeded"
@@ -290,15 +290,20 @@ function set_sriov () {
     exit 1
   else
     if [ "$(lspci | grep -i mellanox | grep -i virtual | wc -l)" -ne "$TOTAL_VFS" ]; then
-      res=`echo 0 > /sys/class/net/${device_up}/device/mlx5_num_vfs`
-      res=`echo ${TOTAL_VFS} > /sys/class/net/${device_up}/device/mlx5_num_vfs`
-      if [ ! $? -eq 0 ]; then
-        logger_print error "Failed to write $TOTAL_VFS > /sys/class/net/${device_up}/device/mlx5_num_vfs"
-        exit 1
-      fi
 
-      # Give MACs to created VFs
-      python ./configure_mellanox_vfs.py ${TOTAL_VFS}
+      if [ ! $REBOOT_REQUIRED == true ] || [ $SCRIPT_MODE == "validate" ] ; then
+        res=`echo 0 > /sys/class/net/${device_up}/device/mlx5_num_vfs`
+        res=`echo ${TOTAL_VFS} > /sys/class/net/${device_up}/device/mlx5_num_vfs`
+        if [ ! $? -eq 0 ]; then
+          logger_print error "Failed to write $TOTAL_VFS > /sys/class/net/${device_up}/device/mlx5_num_vfs"
+          exit 1
+        else
+          logger_print debug "Configured total vfs ${TOTAL_VFS} on ${device_up}"
+        fi
+
+        # Give MACs to created VFs
+        python ./configure_mellanox_vfs.py ${TOTAL_VFS}
+      fi
 
       # Make number of VFs and their MACs persistent
       persistent_ifup_script=/etc/network/if-up.d/persistent_mlnx_params
@@ -311,10 +316,12 @@ function set_sriov () {
       echo "fi" >> $persistent_ifup_script
       echo "if [ -f /etc/init.d/tgt ]; then /etc/init.d/tgt force-reload; else exit 0; fi" >> $persistent_ifup_script
 
-      if [ ! $? -eq 0 ]; then
-        logger_print error "Failed to write $TOTAL_VFS > /sys/class/net/${device_up}/device/mlx5_num_vfs"
-        exit 1
-      else
+      if [ $REBOOT_REQUIRED == true ] && [ $SCRIPT_MODE == "configure" ] ; then
+        logger_print debug "Configured total vfs ${TOTAL_VFS} on ${device_up} will apply \
+                            on next reboot as reboot is required"
+      fi
+
+      if [ $SCRIPT_MODE == "validate" ] ; then
         logger_print debug "Configured total vfs ${TOTAL_VFS} on ${device_up}"
       fi
     fi
