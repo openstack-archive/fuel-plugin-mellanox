@@ -85,7 +85,8 @@ class MellanoxVfsSettings(object):
             vf_dict['vf_num'] = count;
             vf_dict['pci_address'] = vf_info[0]
             vf_dict['port_module'] = vf_info[1]
-            vf_dict['port_num'] = vf_info[12]
+            index_port_num = vf_info.index("port")
+            vf_dict['port_num'] = vf_info[index_port_num + 1]
             vf_dict['mac'] = mac_list[count]
             cls.mellanox_vfs.append(vf_dict)
             count += 1;
