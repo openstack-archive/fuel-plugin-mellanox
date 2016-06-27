@@ -7,7 +7,8 @@ Mellanox plugin configuration
 
 If you plan to enable VM to VM RDMA and to use iSER storage transport you need to configure switching fabric to support the features.
 
-**Ethernet network:**
+Ethernet network:
+-----------------
 
 #. Configure the required VLANs and enable flow control on the Ethernet switch ports.
 #. All related VLANs should be enabled on the Mellanox switch ports (for relevant Fuel logical networks).
@@ -47,12 +48,52 @@ If you plan to enable VM to VM RDMA and to use iSER storage transport you need t
     ...
 
 
-**Infiniband network:**
-If you use OpenSM you need to enable virtualization and allow all PKeys:
+Infiniband network:
+-------------------
+
+Mellanox **UFM** is a pre-requisite for using the Mellanox plugin for Fuel 8.0 with InfiniBand fabrics. Mellanox.s Unified Fabric Manager (UFM®) is a powerful platform for managing scale-out computing environments. UFM enables data center operators to monitor, efficiently provision, and operate the modern data center fabric. UFM is licensed per managed fabric node. For more information on how to obtain UFM, please visit Mellanox.com.
+
+Update OpenSM configurations on UFM node as follows:
+
+#. Update opensm.conf file and make sure of the following::
+
+    vim /opt/ufm/conf/opensm/opensm.conf
+    - virt_enabled 2
+    - no_partition_enforcement TRUE
+    - part_enforce off
+    - allow_both_pkeys FALSE
+
+#. Update the partitions.conf file::
+
+      vim /opt/ufm/conf/partitions.conf.user_ext
+
+      Example:
+  
+      vlan1=0x1, ipoib, sl=0, defmember=full: ALL_CAS;
+      vlan2=0x2, ipoib, sl=0, defmember=full: ALL_CAS;
+      vlan3=0x3, ipoib, sl=0, defmember=full: ALL_CAS;
+
+      vlan4=0x4, ipoib, sl=0, defmember=full: SELF;
+      vlan5=0x5, ipoib, sl=0, defmember=full: SELF;
+      vlan6=0x6, ipoib, sl=0, defmember=full: SELF;
+      vlan7=0x7, ipoib, sl=0, defmember=full: SELF;
+      vlan8=0x8, ipoib, sl=0, defmember=full: SELF;
+      vlan9=0x9, ipoib, sl=0, defmember=full: SELF;
+      . . . 
+      vlan20=0x14, ipoib, sl=0, defmember=full: SELF;
+
+ **Note**: In this example
+
+ - Infra networks VLANs are 1-3 so VLAN2 is assigned to PK 0x2 and will be used for Openstack Management network and VLAN3 is assigned to PK 0x3 and will be used for Openstack Storage network.
+ - Private VLANs are 4-20 so VLANs 4 through 20 are assigned to PKs 0x4 to 0x14 will be used for Tenant networks.
+ - VLAN1 is defined, but not used for consistency with Ethernet setup installation.
+ - The maximum number of VLANs is 128.
+
+Enable **OpenSM** virtualization and allow all PKeys:
 
 #. Create a new opensm.conf file::
 
-    opensm -c /etc/opensm/opensm.conif
+    opensm -c /etc/opensm/opensm.conf
 
 #. Enable virtualization by editing /etc/opensm/opensm.conf and changing the allow_both_pkeys value to TRUE.::
 
