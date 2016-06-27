@@ -6,11 +6,11 @@ Known issues
 ============
 
 Issue 1
-    - Description: For custom (OEM) adapter cards based on Mellanox ConnectX-3 / ConnectX-3 Pro ICs, adapter firmware must be manually burnt prior to the installation with SR-IOV support
+    - Description: For custom (OEM) adapter cards based on Mellanox ConnectX-4 ICs, adapter firmware must be manually burnt prior to the installation with SR-IOV support
     - Workaround: See `the firmware installation instructions <http://www.mellanox.com/page/oem_firmware_download>`_.
 
 Issue 2
-    - Description: The number of SR-IOV virtual functions supported by Mellanox adapters is up to 16 on ConnectX-3 adapters and up to 62 on ConnectX-3 Pro adapters (depends on your HW capabilities).
+    - Description: The number of SR-IOV virtual functions supported by Mellanox adapters is up to 31 on ConnectX-4 adapters (depends on your HW capabilities).
     - Workaround: NA
 
 Issue 3
@@ -30,7 +30,7 @@ Issue 6
     - Workaround: Reboot VMs that didn't get IP from DHCP on time or start VMs in smaller chunks (<10).
 
 Issue 7
-    - Description: After large InfinBand deployment of more than ~20 nodes at once with Controllers HA, it might take time for controllers services to stabilize. 
+    - Description: After large InfinBand deployment of more than ~20 nodes at once with Controllers HA, it might take time for controllers services to stabilize.
     - Workaround: Restart openibd service on controller nodes after the deployment, or deploy with phases.
 
 Issue 8

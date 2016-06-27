@@ -7,7 +7,8 @@ Mellanox plugin configuration
 
 If you plan to enable VM to VM RDMA and to use iSER storage transport you need to configure switching fabric to support the features.
 
-**Ethernet network:**
+Ethernet network:
+-----------------
 
 #. Configure the required VLANs and enable flow control on the Ethernet switch ports.
 #. All related VLANs should be enabled on the Mellanox switch ports (for relevant Fuel logical networks).
@@ -47,8 +48,12 @@ If you plan to enable VM to VM RDMA and to use iSER storage transport you need t
     ...
 
 
-**Infiniband network:**
-If you use OpenSM you need to enable virtualization and allow all PKeys:
+Infiniband network:
+-------------------
+
+Mellanox **UFM** is a pre-requisite for using the Mellanox plugin for Fuel 8.0 with InfiniBand fabrics. Mellanox.s Unified Fabric Manager (UFM®) is a powerful platform for managing scale-out computing environments. UFM enables data center operators to monitor, efficiently provision, and operate the modern data center fabric. UFM is licensed per managed fabric node. For more information on how to obtain UFM, please visit Mellanox.com.
+
+If you use **OpenSM** you need to enable virtualization and allow all PKeys:
 
 #. Create a new opensm.conf file::
 
