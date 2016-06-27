@@ -7,7 +7,8 @@ Mellanox plugin configuration
 
 If you plan to enable VM to VM RDMA and to use iSER storage transport you need to configure switching fabric to support the features.
 
-**Ethernet network:**
+Ethernet network:
+-----------------
 
 #. Configure the required VLANs and enable flow control on the Ethernet switch ports.
 #. All related VLANs should be enabled on the Mellanox switch ports (for relevant Fuel logical networks).
@@ -47,12 +48,54 @@ If you plan to enable VM to VM RDMA and to use iSER storage transport you need t
     ...
 
 
-**Infiniband network:**
-If you use OpenSM you need to enable virtualization and allow all PKeys:
+Infiniband network:
+-------------------
+
+Mellanox **UFM** is a pre-requisite for using the Mellanox plugin for Fuel 8.0 with InfiniBand fabrics. Mellanox.s Unified Fabric Manager (UFM®) is a powerful platform for managing scale-out computing environments. UFM enables data center operators to monitor, efficiently provision, and operate the modern data center fabric. UFM is licensed per managed fabric node. For more information on how to obtain UFM, please visit Mellanox.com.
+
+Update OpenSM configurations on UFM node as follows:
+
+#. Update opensm.conf file and make sure of the following::
+
+    vim /opt/ufm/conf/opensm/opensm.conf
+    - virt_enabled 2
+    - no_partition_enforcement TRUE
+    - part_enforce off
+    - allow_both_pkeys FALSE
+
+#. Update the partitions.conf file::
+
+    vim /opt/ufm/conf/partitions.conf.user_ext
+    vlan1=0x1, ipoib, sl=0, defmember=full: ALL_CAS;
+
+    - Storage and management vlan should be define as follows:
+      vlan2=0x2, ipoib, sl=0, defmember=full: ALL_CAS;
+      vlan3=0x3, ipoib, sl=0, defmember=full: ALL_CAS;
+
+    - Define OpenSM as a member for all OpenStack vlans. Otherwise, the link will go down on "ibdev2netdev" with no connectivity.
+      vlan4=0x4, ipoib, sl=0, defmember=full: SELF;
+      vlan5=0x5, ipoib, sl=0, defmember=full: SELF;
+      vlan6=0x6, ipoib, sl=0, defmember=full: SELF;
+      vlan7=0x7, ipoib, sl=0, defmember=full: SELF;
+      vlan8=0x8, ipoib, sl=0, defmember=full: SELF;
+      vlan9=0x9, ipoib, sl=0, defmember=full: SELF;
+      vlan10=0xa, ipoib, sl=0, defmember=full: SELF;
+      vlan11=0xb, ipoib, sl=0, defmember=full: SELF;
+      vlan12=0xc, ipoib, sl=0, defmember=full: SELF;
+      vlan13=0xd, ipoib, sl=0, defmember=full: SELF;
+      vlan14=0xe, ipoib, sl=0, defmember=full: SELF;
+      vlan15=0xf, ipoib, sl=0, defmember=full: SELF;
+      vlan16=0x10, ipoib, sl=0, defmember=full: SELF;
+      vlan17=0x11, ipoib, sl=0, defmember=full: SELF;
+      vlan18=0x12, ipoib, sl=0, defmember=full: SELF;
+      vlan19=0x13, ipoib, sl=0, defmember=full: SELF;
+      vlan20=0x14, ipoib, sl=0, defmember=full: SELF;
+
+Enable **OpenSM** virtualization and allow all PKeys:
 
 #. Create a new opensm.conf file::
 
-    opensm -c /etc/opensm/opensm.conif
+    opensm -c /etc/opensm/opensm.conf
 
 #. Enable virtualization by editing /etc/opensm/opensm.conf and changing the allow_both_pkeys value to TRUE.::
 

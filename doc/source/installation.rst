@@ -11,22 +11,52 @@ To install Mellanox plugin, follow these steps:
 #. Download the plugin rpm file for MOS 8.0 from `Fuel Plugin Catalog <https://www.mirantis.com/products/openstack-drivers-and-plugins/fuel-plugins>`_.
 #. Copy the plugin on already installed Fuel Master. scp can be used for that.::
 
-   # scp mellanox-plugin-3.0-3.0.0-1.noarch.rpm root@<Fuel_Master_ip>:/tmp
+   # scp mellanox-plugin-3.2-3.2.0-1.noarch.rpm root@<Fuel_Master_ip>:/tmp
+
 #. Install the plugin::
 
    # cd /tmp
-   # fuel plugins --install mellanox-plugin-3.0-3.0.0-1.noarch.rpm
+   # fuel plugins --install mellanox-plugin-3.2-3.2.0-1.noarch.rpm
 
 #. Verify the plugin was installed successfully by having it listed using ``fuel plugins`` command::
 
    # fuel plugins
    #  id | name              | version | package_version
    #  ---|-------------------|---------|----------------
-   #  1  | mellanox-plugin   | 3.0.0   | 3.0.0
+   #  1  | mellanox-plugin   | 3.2.0   | 3.0.0
 
-#. Create new bootstrap image for supporting infiniband networks (``create_mellanox_vpi_bootstrap can be used``):::
+#. Define bootstrap discovery parameters to be burnt on Mellanox Adapters cards:
 
-   [root@fuel ~]# create_mellanox_vpi_bootstrap
+   - **link_type** , available link_type values are:
+
+      - ``eth`` for changing link type to Ethernet
+      - ``ib`` for changing link type to Infiniband
+      - ``current`` for leaving link type as is
+
+   - **max_num_vfs** as integer, default is set to 16.
+
+#. Create Bootstrap discovery image for detecting Mellanox HW and support related configurations
+   with pre-defined parameters::
+
+   [root@fuel ~]# create_mellanox__bootstrap --link_type $link_type --max_num_vfs $max_num_vfs
+   [root@fuel ~]# create_mellanox_bootstrap --help
+
+ ::
+
+   usage: create_mellanox_bootstrap [-h] [--link_type {eth,ib,current}]
+                                 [--max_num_vfs MAX_NUM_VFS]
+   Available link_type values are:
+   -------------------------------
+   - eth for changing link type to Ethernet
+   - ib for changing link type to Infiniband
+   - current for leaving link type as is
+
+   optional arguments:
+     -h, --help            show this help message and exit
+     --link_type {eth,ib,current}
+     --max_num_vfs MAX_NUM_VFS
+                        an integer for the maximum number of vfs to be burned in bootstrap
+
 
    ::
 
@@ -39,8 +69,24 @@ To install Mellanox plugin, follow these steps:
      . . .
      Bootstrap image f790e9f8-5bc5-4e61-9935-0640f2eed949 has been activated.
 
-#. In case of using the customized bootstrap image, you must reboot your target nodes with the new bootstrap image you just created.
-   If you already have discovered nodes you can either reboot them manually or use :bash: `reboot_bootstrap_nodes` command.  Run :bash: `reboot_bootstrap_nodes -h` for help.
+#. Reboot nodes after installing plugin::
+
+   [root@fuel ~]# reboot_bootstrap_nodes -a
+   [root@fuel ~]# reboot_bootstrap_nodes -h
+
+ ::
+
+   Usage: reboot_bootstrap_nodes [-e environment_id] [-h] [-a]
+      This script is used to trigger reboot for nodes in 'discover' status,
+      of a given environment (if given) or of all environments.
+      Please wait for nodes to boot again after triggering this script.
+
+   Options:
+
+   -h         Display the help message.
+   -e <env>   Reboot all nodes in state 'discover' of the given environment.
+   -a         Reboot all nodes in state 'discover' of all environments.
+
 
 #. Create an environment - for more information please see `how to create an environment <https://docs.mirantis.com/openstack/fuel/fuel-8.0/user-guide.html>`_.
    We support both main network configurations:
@@ -50,6 +96,12 @@ To install Mellanox plugin, follow these steps:
 
    .. image:: ./_static/ml2_driver.png
    .. :alt: Network Configuration Type
+
+#. Adjust the kernal parameters in the settings tab which is a condition for both iSER and SRIOV.
+   Open the Settings tab, select General section and then add ``intel_iommu=on`` at the beginning of the initial parameters.
+
+   .. image:: ./_static/kernal_parameters.png
+   .. :alt: Hypervisor Type
 
 #. Enable KVM hypervisor type. KVM is required to enable Mellanox Openstack features.
    Open the Settings tab, select Compute section and then choose KVM hypervisor type.
@@ -79,16 +131,6 @@ To install Mellanox plugin, follow these steps:
      .. image:: ./_static/sriov.png
      .. :alt: Enable SR-IOV
 
-   #. Support quality of service over VLAN networks with Mellanox SR-IOV direct ports (Neutron)
-      **Note**: Relevant for `VLAN segmentation` only
-      If selected, Neutron "Quality of service" (QoS) will be enabled for VLAN networks and ports over Mellanox HCAs.
-      **Note**: This feature is supported only if:
-
-       - Ethernet mode is used
-       - SR-IOV is enabled
-
-      .. image:: ./_static/qos.png
-      .. :alt: Enable QoS
 
    #. Support NEO SDN controller auto VLAN Provisioning (Neutron)
       **Note**: Relevant for `VLAN segmentation` only
@@ -102,13 +144,6 @@ To install Mellanox plugin, follow these steps:
 
       Additional info about NEO can be found by link: https://community.mellanox.com/docs/DOC-2155
 
-   #. Support VXLAN Offloading (Neutron)
-      **Note**: Relevant for `tunneling segmentation` only
-
-      If selected, Mellanox hardware will be used to achieve a better performance and significant CPU overhead reduction using VXLAN traffic offloading.
-
-      .. image:: ./_static/vxlan.png
-      .. :alt: Enable VXLAN offloading
 
    #. iSER protocol for volumes (Cinder)
       **Note**: Relevant for both `VLAN segmentation` and `VLAN segmentation` deployments
@@ -132,7 +167,7 @@ To install Mellanox plugin, follow these steps:
 
 #. In Ethernet cloud, when using SR-IOV & iSER, one of the virtual NICs for SR-IOV will be reserved to the storage network.
 
-#. When using SR-IOV you can set the number of virtual NICs (virtual functions) to up to 62
+#. When using SR-IOV you can set the number of virtual NICs (virtual functions) to up to 31
    if your hardware and system capabilities like memory and BIOS support it).
-   In any case of SR-IOV hardware limitation, the installation will try to fallback a VF number to the default of 8 VFs.
+   In any case of SR-IOV hardware limitation, the installation will try to fallback a VF number to the default of 16 VFs.
 
