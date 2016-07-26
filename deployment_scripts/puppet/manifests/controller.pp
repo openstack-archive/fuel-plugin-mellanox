@@ -13,7 +13,7 @@ if ( $mlnx['driver'] == 'mlx4_en' and $mlnx['mlnx_qos'] ) {
 }
 
 if ($mlnx['sriov']) {
-  $pci_vendor_devices = '15b3:1004,15b3:1014,8086:10ca'
+  $pci_vendor_devices = '15b3:1014,15b3:1016'
   $agent_required = 'True'
   class { 'mellanox_openstack::controller_sriov' :
     eswitch_vnic_type           => $eswitch_vnic_type,
