@@ -90,11 +90,21 @@ class MellanoxSettings(object):
         mlnx = cls.get_mlnx_section()
         for network_type, ifc_dict in mlnx_interfaces.iteritems():
             if 'driver' in ifc_dict and network_type in ['private','management','storage']:
-              drivers.append(ifc_dict['driver'])
-              interfaces.append(ifc_dict['interface'])
+              if(type(ifc_dict['driver']) is list):
+                  drivers.extend(ifc_dict['driver'])
+              else:
+                  drivers.append(ifc_dict['driver'])
+
+              if(type(ifc_dict['interface']) is list):
+                  interfaces.extend(ifc_dict['interface'])
+              else:
+                  interfaces.append(ifc_dict['interface'])
 
         drivers_set = list(set(drivers))
         interfaces_set = list(set(interfaces))
+	print interfaces_set
+	print drivers_set
+
         if (len(drivers_set) > 1):
              logging.error("Multiple ConnectX adapters was found in this environment.")
              raise MellanoxSettingsException(
@@ -465,14 +475,12 @@ class MellanoxSettings(object):
                     if 'bonds' in cls.data and interface in cls.data['bonds']:
                         network_interface['driver'] = \
                             cls.data['bonds'][interface]['driver']
-                        if network_type == 'private':
+                        if network_type == 'private' or ( network_type == 'storage' and  cls.is_iser_enabled() ):
 
                             # Assign SR-IOV to the first port only
                             network_interface['interface'] = \
                                 cls.data['bonds'][interface]['interfaces'][0]
-                        else:
-                            network_interface['interface'] = \
-                                cls.data['bonds'][interface]['interfaces']
+                                
                     else: # Not a bond
                         network_interface['driver'] = \
                             interfaces[interface]['vendor_specific']['driver']
@@ -483,6 +491,8 @@ class MellanoxSettings(object):
                 'storage' in dict_of_interfaces.keys():
                 dict_of_interfaces['private'] = dict_of_interfaces['storage']
                 dict_of_interfaces['private']['bridge'] = 'br-prv'
+            print cls.data['bonds']
+            print dict_of_interfaces
             return dict_of_interfaces
 
 def main():
