@@ -90,11 +90,22 @@ class MellanoxSettings(object):
         mlnx = cls.get_mlnx_section()
         for network_type, ifc_dict in mlnx_interfaces.iteritems():
             if 'driver' in ifc_dict and network_type in ['private','management','storage']:
-              drivers.append(ifc_dict['driver'])
-              interfaces.append(ifc_dict['interface'])
+              
+              # The bond interfaces extend the original list,
+              # otherwise, the interface is appended to the list.
+              if(type(ifc_dict['driver']) is list):
+                  drivers.extend(ifc_dict['driver'])
+              else:
+                  drivers.append(ifc_dict['driver'])
+
+              if(type(ifc_dict['interface']) is list):
+                  interfaces.extend(ifc_dict['interface'])
+              else:
+                  interfaces.append(ifc_dict['interface'])
 
         drivers_set = list(set(drivers))
         interfaces_set = list(set(interfaces))
+
         if (len(drivers_set) > 1):
              logging.error("Multiple ConnectX adapters was found in this environment.")
              raise MellanoxSettingsException(
@@ -289,6 +300,10 @@ class MellanoxSettings(object):
         return cls.get_mlnx_section()['iser']
 
     @classmethod
+    def is_sriov_enabled(cls):
+        return cls.get_mlnx_section()['sriov']
+
+    @classmethod
     def is_vxlan_offloading_enabled(cls):
         return cls.get_mlnx_section()['vxlan_offloading']
 
@@ -434,49 +449,52 @@ class MellanoxSettings(object):
 
             # Map networks to interfaces
             for transformation in transformations:
-                if transformation['action'] == 'add-port' or \
-                    transformation['action'] == 'add-bond':
-                    if transformation['bridge'] == 'br-fw-admin':
-                        network_type = 'admin'
-                    elif transformation['bridge'] == 'br-ex':
-                        network_type = 'public'
-                    elif transformation['bridge'] == 'br-aux' or \
-                        transformation['bridge'] == 'br-mesh':
-                        network_type = 'private'
-                    elif transformation['bridge'] == 'br-mgmt':
-                        network_type = 'management'
-                    elif transformation['bridge'] == 'br-storage':
-                        network_type = 'storage'
-                    elif transformation['bridge'] == 'br-baremetal':
-                        network_type = 'baremetal'
+                if 'bridge' in transformation.keys() and \
+                    (transformation['action'] == 'add-port' or \
+                    transformation['action'] == 'add-bond'):
+                     if transformation['bridge'] == 'br-fw-admin':
+                         network_type = 'admin'
+                     elif transformation['bridge'] == 'br-ex':
+                         network_type = 'public'
+                     elif transformation['bridge'] == 'br-aux' or \
+                         transformation['bridge'] == 'br-mesh':
+                         network_type = 'private'
+                     elif transformation['bridge'] == 'br-mgmt':
+                         network_type = 'management'
+                     elif transformation['bridge'] == 'br-storage':
+                         network_type = 'storage'
+                     elif transformation['bridge'] == 'br-baremetal':
+                         network_type = 'baremetal'
 
-                    network_interface = {}
-                    network_interface['bridge'] = transformation['bridge']
+                     network_interface = {}
+                     network_interface['bridge'] = transformation['bridge']
 
-                    # Split to iface name and VLAN
-                    iface_split = transformation['name'].split('.')
-                    if len(iface_split)==1:
-                        iface_split.append(str(1))
-                    interface, vlan = iface_split
-                    network_interface['interface'] = interface
-                    network_interface['vlan'] = vlan
+                     # Split to iface name and VLAN
+                     iface_split = transformation['name'].split('.')
+                     if len(iface_split)==1:
+                         iface_split.append(str(1))
+                     interface, vlan = iface_split
+                     network_interface['interface'] = interface
+                     network_interface['vlan'] = vlan
 
-                    # If bond
-                    if 'bonds' in cls.data and interface in cls.data['bonds']:
-                        network_interface['driver'] = \
-                            cls.data['bonds'][interface]['driver']
-                        if network_type == 'private':
-
-                            # Assign SR-IOV to the first port only
-                            network_interface['interface'] = \
-                                cls.data['bonds'][interface]['interfaces'][0]
-                        else:
-                            network_interface['interface'] = \
-                                cls.data['bonds'][interface]['interfaces']
-                    else: # Not a bond
-                        network_interface['driver'] = \
-                            interfaces[interface]['vendor_specific']['driver']
-                    dict_of_interfaces[network_type] = network_interface
+                     # If bond
+                     if 'bonds' in cls.data and interface in cls.data['bonds']:
+                         network_interface['driver'] = \
+                             cls.data['bonds'][interface]['driver']
+                         if ( network_type == 'private' and cls.is_sriov_enabled() ) or \
+                             ( network_type == 'storage' and cls.is_iser_enabled() ):
+                             
+                             # Assign SR-IOV/ISER to the first port only.
+                             # This is a temporary workaround until supporing bond over VFs.
+                             # Array sorting of interfaces is done to make sure that 
+                             # the first interface on all nodes is the same.
+                             if_list = cls.data['bonds'][interface]['interfaces']
+                             if_list.sort()
+                             network_interface['interface'] = if_list[0]
+                     else: # Not a bond
+                         network_interface['driver'] = \
+                             interfaces[interface]['vendor_specific']['driver']
+                     dict_of_interfaces[network_type] = network_interface
 
             # Set private network in case private and storage on the same port
             if 'private' not in dict_of_interfaces.keys() and \
