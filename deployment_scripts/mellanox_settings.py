@@ -90,11 +90,21 @@ class MellanoxSettings(object):
         mlnx = cls.get_mlnx_section()
         for network_type, ifc_dict in mlnx_interfaces.iteritems():
             if 'driver' in ifc_dict and network_type in ['private','management','storage']:
-              drivers.append(ifc_dict['driver'])
-              interfaces.append(ifc_dict['interface'])
+              #here we handle the bond interfaces by extanding them to the list,
+              #otherwise we append the interface to the list
+              if(type(ifc_dict['driver']) is list):
+                  drivers.extend(ifc_dict['driver'])
+              else:
+                  drivers.append(ifc_dict['driver'])
+
+              if(type(ifc_dict['interface']) is list):
+                  interfaces.extend(ifc_dict['interface'])
+              else:
+                  interfaces.append(ifc_dict['interface'])
 
         drivers_set = list(set(drivers))
         interfaces_set = list(set(interfaces))
+
         if (len(drivers_set) > 1):
              logging.error("Multiple ConnectX adapters was found in this environment.")
              raise MellanoxSettingsException(
@@ -289,6 +299,10 @@ class MellanoxSettings(object):
         return cls.get_mlnx_section()['iser']
 
     @classmethod
+    def is_sriov_enabled(cls):
+        return cls.get_mlnx_section()['sriov']
+
+    @classmethod
     def is_vxlan_offloading_enabled(cls):
         return cls.get_mlnx_section()['vxlan_offloading']
 
@@ -465,14 +479,11 @@ class MellanoxSettings(object):
                     if 'bonds' in cls.data and interface in cls.data['bonds']:
                         network_interface['driver'] = \
                             cls.data['bonds'][interface]['driver']
-                        if network_type == 'private':
-
-                            # Assign SR-IOV to the first port only
+                        if ( network_type == 'private' and cls.is_sriov_enabled() ) or \
+                            ( network_type == 'storage' and cls.is_iser_enabled() ):
+                            # Assign SR-IOV/ISER to the first port only
                             network_interface['interface'] = \
-                                cls.data['bonds'][interface]['interfaces'][0]
-                        else:
-                            network_interface['interface'] = \
-                                cls.data['bonds'][interface]['interfaces']
+                                cls.data['bonds'][interface]['interfaces'][0]   
                     else: # Not a bond
                         network_interface['driver'] = \
                             interfaces[interface]['vendor_specific']['driver']
