@@ -124,6 +124,8 @@ class MellanoxSettings(object):
                 mlnx['cx_card'] = 'none'
                 logging.error('Failed executing ibdev2netdev')
                 return 0
+              if('bonds' in cls.data and mellanox_interface.startswith('bond')):
+                  mellanox_interface=cls.data['bonds'][mellanox_interface]['interfaces'][0]
               interface_line = [l for l in ibdev if mellanox_interface in l]
               if interface_line and 'mlx5' in interface_line.pop():
                   mlnx['cx_card'] = 'ConnectX-4'
