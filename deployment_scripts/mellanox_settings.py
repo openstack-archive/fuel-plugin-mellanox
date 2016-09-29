@@ -105,7 +105,6 @@ class MellanoxSettings(object):
 
         drivers_set = list(set(drivers))
         interfaces_set = list(set(interfaces))
-
         if (len(drivers_set) > 1):
              logging.error("Multiple ConnectX adapters was found in this environment.")
              raise MellanoxSettingsException(
@@ -124,6 +123,8 @@ class MellanoxSettings(object):
                 mlnx['cx_card'] = 'none'
                 logging.error('Failed executing ibdev2netdev')
                 return 0
+              if('bonds' in cls.data and mellanox_interface.startswith('bond')):
+                  mellanox_interface=cls.data['bonds'][mellanox_interface]['interfaces'][0]
               interface_line = [l for l in ibdev if mellanox_interface in l]
               if interface_line and 'mlx5' in interface_line.pop():
                   mlnx['cx_card'] = 'ConnectX-4'
@@ -167,7 +168,16 @@ class MellanoxSettings(object):
                 )
             mlnx['physical_port'] = interfaces[private_ifc]['vendor_specific']['bus_info']
         elif mlnx['driver'] == MLNX_DRIVERS_LIST[mlnx['cx_card']]['eth_driver']:
-            mlnx['physical_port'] = private_ifc
+
+            # If only iSER
+            if not cls.is_sriov_enabled() and cls.is_iser_enabled():
+                mlnx = cls.get_mlnx_section()
+                storage_ifc = cls.get_interface_by_network('storage')
+                mlnx['physical_port'] = storage_ifc
+
+            # If SR-IOV
+            else:
+                mlnx['physical_port'] = private_ifc
 
     @classmethod
     def add_storage_vlan(cls):
@@ -483,12 +493,12 @@ class MellanoxSettings(object):
                              cls.data['bonds'][interface]['driver']
                          if ( network_type == 'private' and cls.is_sriov_enabled() ) or \
                              ( network_type == 'storage' and cls.is_iser_enabled() ):
-                             
+
                              # Assign SR-IOV/ISER to the first port only.
                              # This is a temporary workaround until supporing bond over VFs.
                              # We sort the array of interfaces in order to get the first
                              # interface on all nodes.
-                             if_list = cls.data['bonds'][interface]['interfaces']
+                             if_list=cls.data['bonds'][interface]['interfaces']
                              if_list.sort()
                              network_interface['interface'] = if_list[0]
                      else: # Not a bond
@@ -522,3 +532,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+
