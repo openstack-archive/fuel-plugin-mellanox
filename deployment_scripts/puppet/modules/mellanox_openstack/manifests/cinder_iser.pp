@@ -12,6 +12,11 @@ class mellanox_openstack::cinder_iser (
   cinder_config { 'DEFAULT/iscsi_ip_address' :
     value => "$iser_ip_address"
   }
+
+  cinder_config { 'LVM-backend/iscsi_protocol' :
+    value => 'iser'
+  }
+
   service { $cinder::params::volume_service :
     ensure    => running,
     subscribe => [Cinder_config['DEFAULT/iscsi_protocol'],
