@@ -11,19 +11,19 @@ To install Mellanox plugin, follow these steps:
 #. Download the plugin rpm file for MOS 8.0 from `Fuel Plugin Catalog <https://www.mirantis.com/products/openstack-drivers-and-plugins/fuel-plugins>`_.
 #. Copy the plugin on already installed Fuel Master. scp can be used for that.::
 
-   # scp mellanox-plugin-3.2-3.2.0-1.noarch.rpm root@<Fuel_Master_ip>:/tmp
+   # scp mellanox-plugin-3.2-3.2.1-1.noarch.rpm root@<Fuel_Master_ip>:/tmp
 
 #. Install the plugin::
 
    # cd /tmp
-   # fuel plugins --install mellanox-plugin-3.2-3.2.0-1.noarch.rpm
+   # fuel plugins --install mellanox-plugin-3.2-3.2.1-1.noarch.rpm
 
 #. Verify the plugin was installed successfully by having it listed using ``fuel plugins`` command::
 
    # fuel plugins
    #  id | name              | version | package_version
    #  ---|-------------------|---------|----------------
-   #  1  | mellanox-plugin   | 3.2.0   | 3.0.0
+   #  1  | mellanox-plugin   | 3.2.1   | 3.0.0
 
 #. Define bootstrap discovery parameters to be burnt on Mellanox Adapters cards:
 
@@ -170,4 +170,3 @@ To install Mellanox plugin, follow these steps:
 #. When using SR-IOV you can set the number of virtual NICs (virtual functions) to up to 31
    if your hardware and system capabilities like memory and BIOS support it).
    In any case of SR-IOV hardware limitation, the installation will try to fallback a VF number to the default of 16 VFs.
-
