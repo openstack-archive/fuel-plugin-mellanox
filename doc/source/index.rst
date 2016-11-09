@@ -4,7 +4,7 @@
    contain the root `toctree` directive.
 
 =====================================================================
-Guide to the Mellanox ConnectX-4 Plugin ver. 3.2-3.2.0-1 for Fuel
+Guide to the Mellanox ConnectX-4 Plugin ver. 3.2-3.2.1-1 for Fuel
 =====================================================================
 
 User documentation

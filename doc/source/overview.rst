@@ -47,3 +47,9 @@ Requirements
  (e.g. SN2700 (ETH), SB7700 (IB)). The switch ports should be configured specifically to use 100 Gb speed. No
  additional configuration is required on the adapter side.
 
+Limitations
+-----------
+| 1. when using iSER and bonding, the storage interface will be a virtual function under the first
+ port, and will not support failover.
+| 2. when using SR-IOV and bonding, the virtual functions will be created and allocated from the
+ first interface, and failover is not supported.
