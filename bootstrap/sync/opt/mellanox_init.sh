@@ -16,6 +16,11 @@
 
 OFED_DEBS_DIR=/opt/ofed/MLNX_OFED/DEBS
 
+# Updating linux-headers
+kernel_prefix=initrd.img
+sudo apt-get install -y $(ls /boot/ | grep $kernel_prefix | 
+sed  "s/$kernel_prefix/linux-headers/")
+
 # Set mlnx scripts to run on boot
 sed -i '1a\$(init_mlnx.sh > \/dev\/null 2>\&1) \&\n' /etc/rc.local
 if [ ! -z $1 ]; then

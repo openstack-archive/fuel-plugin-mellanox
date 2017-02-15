@@ -145,4 +145,8 @@ sysctl_conf set 'kernel.printk' '4 4 1 7'
 service openibd stop
 service openibd start
 
+# Setting interfaces up
+for interface in `ifconfig -a | sed 's/[ \t].*//;/^\(lo\|\)$/d'`;
+do ifconfig $interface up; done
+
 exit 0

@@ -342,4 +342,7 @@ case $SCRIPT_MODE in
   ;;
 esac
 
+# Setting interfaces up
+for i in `ls /sys/class/net` ; do ifconfig $i up; done
+
 exit $?
