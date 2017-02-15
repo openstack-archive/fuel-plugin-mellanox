@@ -41,7 +41,7 @@ function install_mlnx_ofed_src () {
   if [ "$DISTRO" == "redhat" ]; then
     yum install ${OFED_PACKAGE_NAME} -y
   elif [ "$DISTRO" == "ubuntu" ]; then
-    apt-get install ${OFED_PACKAGE_NAME} -y
+    apt-get install ${OFED_PACKAGE_NAME} -y --force-yes
   fi
   if [ $? -ne 0 ]; then
     logger_print error "Failed installing ${OFED_PACKAGE_NAME} package"
@@ -78,12 +78,22 @@ function add_kernel_support () {
   fi
 }
 
+function install_missing_packages_for_ofed() {
+  apt-get install -y --force-yes  dpatch autoconf libgfortran3 \
+  chrpath graphviz flex debhelper swig quilt m4 libltdl-dev \
+  gfortran tcl bison autotools-dev tk python-libxml2 tcl8.4 \
+  pkg-config automake tk8.4
+}
+
 function install_ofed_without_fw_update () {
   OFED_INSTALL_SCRIPT="${OFED_DIR}/mlnxofedinstall"
   if [ ! -f $OFED_INSTALL_SCRIPT ]; then
     logger_print error "Failed to find $OFED_INSTALL_SCRIPT"
     exit 1
   fi
+
+  logger_print info "Installing missing packges for OFED"
+  install_missing_packages_for_ofed
 
   logger_print info "Installing OFED drivers"
   OFED_INSTALL_SCRIPT_CMD="/usr/bin/perl ${OFED_INSTALL_SCRIPT}"
@@ -144,5 +154,9 @@ fi
 sysctl_conf set 'kernel.printk' '4 4 1 7'
 service openibd stop
 service openibd start
+
+# Setting interfaces up
+for interface in `ifconfig -a | sed 's/[ \t].*//;/^\(lo\|\)$/d' | \
+sed 's/://'`;do ifconfig $interface up; done
 
 exit 0
