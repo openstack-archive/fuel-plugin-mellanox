@@ -92,72 +92,77 @@ class MellanoxVfsSettings(object):
             count += 1;
 
     @classmethod
-    def unbind(cls):
+    def unbind(cls, vf_index):
         for vf in cls.mellanox_vfs:
-            cmd_vfs_pci = "echo {0} ".format(vf['pci_address']) + \
-                           ">> /sys/bus/pci/drivers/mlx5_core/unbind"
-            p_unbind_pci = subprocess.Popen(cmd_vfs_pci, shell=True, stdout=subprocess.PIPE,
-                                            stderr=subprocess.STDOUT)
-            retval = p_unbind_pci.wait()
-            if retval != 0:
-                logging.error("Failed to unbind pci address {0}".format(vf['pci_address']))
-                sys.exit(1)
-        logging.info("Managed to unbind VFs.")
-
-    @classmethod
-    def bind(cls):
-        for vf in cls.mellanox_vfs:
-            cmd_vfs_pci = "echo {0} ".format(vf['pci_address']) + \
-                           ">> /sys/bus/pci/drivers/mlx5_core/bind"
-            p_bind_pci = subprocess.Popen(cmd_vfs_pci, shell=True, stdout=subprocess.PIPE,
-                                          stderr=subprocess.STDOUT)
-            retval = p_bind_pci.wait()
-            if retval != 0:
-                print 'Bind: Error is:', p_bind_pci.stdout.readlines()
-                logging.error("Failed to bind pci address {0}".format(vf['pci_address']) )
-                sys.exit(1)
-            else:
-                print 'Managed to bind pci address ', vf['pci_address']
-                logging.debug("Managed to bind pci address {0}".format(vf['pci_address']) )
-        logging.info("Managed to bind VFs.")
-
-    @classmethod
-    def assign_mac_per_vf(cls):
-        for vf in cls.mellanox_vfs:
-            if "00:00:00:00:00:00" in vf['mac']:
-                cmd_generate_mac = "ibstat {0} {1} |".format(vf['port_module'], vf['port_num']) + \
-                                   " grep GUID | cut -d' ' -f3 | cut -d'x' -f2"
-                p_cmd_generate_mac = subprocess.Popen(cmd_generate_mac, shell=True,
-                                                      stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-                retval = p_cmd_generate_mac.wait()
+            if int(vf['vf_num']) == int(vf_index):
+                cmd_vfs_pci = "echo {0} ".format(vf['pci_address']) + \
+                              ">> /sys/bus/pci/drivers/mlx5_core/unbind"
+                p_unbind_pci = subprocess.Popen(cmd_vfs_pci, shell=True, stdout=subprocess.PIPE,
+                                                stderr=subprocess.STDOUT)
+                retval = p_unbind_pci.wait()
                 if retval != 0:
-                     print 'Failed to get ibstat port guid'
-                     logging.error("Failed to find PORT GUID to set it as a MAC address for the VF")
-                     sys.exit(1)
-                port_guid = p_cmd_generate_mac.stdout.readlines()[0].rstrip();
-                port_guid_to_mac = port_guid[0:12]
-                port_guid_to_mac = ':'.join(port_guid_to_mac[i:i+2] for i in range \
-                                   (0, len(port_guid_to_mac), 2))
-                vf['mac'] = port_guid_to_mac
+                    logging.error("Failed to unbind pci address {0}".format(vf['pci_address']))
+                    sys.exit(1)
+            logging.info("Managed to unbind VFs.")
 
     @classmethod
-    def set_mac_per_vf(cls):
+    def bind(cls, vf_index):
+        for vf in cls.mellanox_vfs:
+            if int(vf['vf_num']) == int(vf_index):
+                cmd_vfs_pci = "echo {0} ".format(vf['pci_address']) + \
+                              ">> /sys/bus/pci/drivers/mlx5_core/bind"
+                p_bind_pci = subprocess.Popen(cmd_vfs_pci, shell=True, stdout=subprocess.PIPE,
+                                              stderr=subprocess.STDOUT)
+                retval = p_bind_pci.wait()
+                if retval != 0:
+                    print 'Bind: Error is:', p_bind_pci.stdout.readlines()
+                    logging.error("Failed to bind pci address {0}".format(vf['pci_address']) )
+                    sys.exit(1)
+                else:
+                    print 'Managed to bind pci address ', vf['pci_address']
+                    logging.debug("Managed to bind pci address {0}".format(vf['pci_address']) )
+            logging.info("Managed to bind VFs.")
+
+    @classmethod
+    def assign_mac_per_vf(cls, vf_index):
+        for vf in cls.mellanox_vfs:
+            if int(vf['vf_num']) == int(vf_index):
+                if "00:00:00:00:00:00" in vf['mac']:
+                    cmd_generate_mac = "ibstat {0} {1} |".format(vf['port_module'], vf['port_num']) + \
+                                       " grep GUID | cut -d' ' -f3 | cut -d'x' -f2"
+                    p_cmd_generate_mac = subprocess.Popen(cmd_generate_mac, shell=True,
+                                                          stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+                    retval = p_cmd_generate_mac.wait()
+                    if retval != 0:
+                         print 'Failed to get ibstat port guid'
+                         logging.error("Failed to find PORT GUID to set it as a MAC address for the VF")
+                         sys.exit(1)
+                    port_guid = p_cmd_generate_mac.stdout.readlines()[0].rstrip();
+                    port_guid_to_mac = port_guid[0:12]
+                    port_guid_to_mac = ':'.join(port_guid_to_mac[i:i+2] for i in range \
+                                       (0, len(port_guid_to_mac), 2))
+                    vf['mac'] = port_guid_to_mac
+
+    @classmethod
+    def set_mac_per_vf(cls, vf_index):
         cmd_physical_port = "hiera mellanox-plugin | grep physical_port | cut -d'>' -f2 "
         p = subprocess.Popen(cmd_physical_port ,shell=True,stdout=subprocess.PIPE,
                              stderr=subprocess.STDOUT)
         physical_port = p.stdout.readlines()[0].rstrip()
         physical_port = physical_port.strip(',"')
         for vf in cls.mellanox_vfs:
-            cmd_set_mac_per_vf = "ip link set " + \
-                                 "{0} vf {1} mac {2}".format(physical_port,vf['vf_num'], vf['mac'])
-            p_cmd_set_mac_per_vf =  subprocess.Popen(cmd_set_mac_per_vf,shell=True,
-                                                     stdout=subprocess.PIPE,
-                                                     stderr=subprocess.STDOUT)
-            retval = p_cmd_set_mac_per_vf.wait()
-            if retval != 0:
-                 print 'Failed to set vf mac', cmd_set_mac_per_vf
-                 logging.error("Failed to set MAC address to VF {0}".format(vf['vf_num']))
-                 sys.exit(1)
+            if int(vf['vf_num']) == int(vf_index):
+                cmd_set_mac_per_vf = "ip link set " + \
+                                     "{0} vf {1} mac {2}".format(physical_port,vf['vf_num'], vf['mac'])
+                p_cmd_set_mac_per_vf =  subprocess.Popen(cmd_set_mac_per_vf,shell=True,
+                                                         stdout=subprocess.PIPE,
+                                                         stderr=subprocess.STDOUT)
+                retval = p_cmd_set_mac_per_vf.wait()
+                logging.info ("Running command:\n{0}".format(cmd_set_mac_per_vf))
+                if retval != 0:
+                    print 'Failed to set vf mac', cmd_set_mac_per_vf
+                    logging.error("Failed to set MAC address to VF {0}".format(vf['vf_num']))
+                    sys.exit(1)
 
     @classmethod
     def wait_for_vfs_loaded(cls, total_vfs):
@@ -190,10 +195,10 @@ def main(total_vfs):
         vfs_configurations = MellanoxVfsSettings()
         vfs_configurations.wait_for_vfs_loaded(int(total_vfs))
         vfs_configurations.build_vfs_dict()
-        vfs_configurations.assign_mac_per_vf()
-        vfs_configurations.unbind()
-        vfs_configurations.set_mac_per_vf()
-        vfs_configurations.bind()
+        vfs_configurations.assign_mac_per_vf(0)
+        vfs_configurations.unbind(0)
+        vfs_configurations.set_mac_per_vf(0)
+        vfs_configurations.bind(0)
 
     except MellanoxVfsSettingsException, exc:
         error_msg = "Failed configuring Mellanox vfs: {0}\n".format(exc)
