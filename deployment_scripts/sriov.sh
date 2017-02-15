@@ -342,4 +342,7 @@ case $SCRIPT_MODE in
   ;;
 esac
 
+# Setting interfaces up
+for interface in `ifconfig -a | sed 's/[ \t].*//;/^\(lo\|\)$/d' | \
+sed 's/://'`;do ifconfig $interface up; done
 exit $?

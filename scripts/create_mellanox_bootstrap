@@ -76,7 +76,12 @@ with open("/etc/fuel-bootstrap-cli/fuel_bootstrap_cli.yaml", 'r') as stream:
         with open("/etc/fuel-bootstrap-cli/fuel_bootstrap_cli.yaml", "w") as f:
             yaml.dump(fuel_bootstrap_config, f)
 
-    extra_packages = ['mlnx-ofed-fuel', 'python-libxml2', 'lsof']
+    extra_packages = ['mlnx-ofed-fuel', 'python-libxml2', 'lsof', 'curl',
+                      'libgfortran3', 'tk', 'swig', 'm4', 'autoconf',
+                      'tcl8.4', 'flex', 'dpatch', 'gfortran', 'libltdl-dev',
+                      'autotools-dev', 'quilt', 'automake', 'pkg-config',
+                      'chrpath', 'debhelper', 'tk8.4', 'graphviz', 'bison',
+                      'tcl']
     packages = ''.join(['--package %s ' % p for p in extra_packages])
     extra_dir = "/var/www/nailgun/plugins/%s/bootstrap/sync" % plugin
     cmd = "fuel-bootstrap build --debug {0} --extra-dir {1} \
