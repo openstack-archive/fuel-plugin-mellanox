@@ -44,12 +44,16 @@ function get_num_probe_vfs () {
 }
 
 function calculate_total_vfs () {
-  # validate num of vfs is an integer, 0 <= num <= 64
+  max_card_vfs=$MAX_VFS
+  if [ $CX == "ConnectX-5" ]; then
+    max_card_vfs=$MAX_VFS_CX5
+  fi
+  # validate num of vfs is an integer, 0 <= num <= 96
   if [ "${USER_NUM_OF_VFS}" -ne "${USER_NUM_OF_VFS}" ] 2>/dev/null ||
-      [ "${USER_NUM_OF_VFS}" -gt ${MAX_VFS} ] ||
+      [ "${USER_NUM_OF_VFS}" -gt ${max_card_vfs} ] ||
       [ "${USER_NUM_OF_VFS}" -lt ${MIN_VFS} ]; then
     logger_print error "Illegal number of VFs ${USER_NUM_OF_VFS}, value
-                        should be an integer between ${MIN_VFS},${MAX_VFS}"
+                        should be an integer between ${MIN_VFS},${max_card_vfs}"
     return 1
   fi
   num_of_vfs=0
@@ -177,7 +181,7 @@ function burn_vfs_in_fw () {
     done
     service mst stop &>/dev/null
   fi
-  if [ $CX == 'ConnectX-4' ]; then
+  if [ $CX == 'ConnectX-4' ] || [ $CX == 'ConnectX-5' ]; then
     # required for mlxconfig to discover mlnx devices
     service openibd start &>/dev/null
     service mst start &>/dev/null
@@ -218,9 +222,9 @@ function configure_sriov () {
       logger_print info "Detected: ConnectX-3 card"
     fi
 
-    if [ $CX == 'ConnectX-4' ]; then
+    if [ $CX == 'ConnectX-4' ] || [ $CX == 'ConnectX-5' ]; then
       set_sriov $total_vfs &&
-      logger_print info "Detected: ConnectX-4 card"
+      logger_print info "Detected: $CX card"
     fi
 
     return $?
@@ -266,7 +270,7 @@ function validate_sriov () {
     set_modprobe_file $FALLBACK_NUM_VFS
     service openibd restart &> /dev/null
   fi
-  if [ $CX == 'ConnectX-4' ]; then
+  if [ $CX == 'ConnectX-4' ] || [ $CX == 'ConnectX-5' ]; then
     set_sriov $FALLBACK_NUM_VFS
   fi
 
