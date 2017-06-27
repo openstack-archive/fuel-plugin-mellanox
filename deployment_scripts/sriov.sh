@@ -177,7 +177,7 @@ function burn_vfs_in_fw () {
     done
     service mst stop &>/dev/null
   fi
-  if [ $CX == 'ConnectX-4' ]; then
+  if [ $CX == 'ConnectX-4' ] || [ $CX == 'ConnectX-5' ]; then
     # required for mlxconfig to discover mlnx devices
     service openibd start &>/dev/null
     service mst start &>/dev/null
@@ -218,9 +218,9 @@ function configure_sriov () {
       logger_print info "Detected: ConnectX-3 card"
     fi
 
-    if [ $CX == 'ConnectX-4' ]; then
+    if [ $CX == 'ConnectX-4' ] || [ $CX == 'ConnectX-5' ]; then
       set_sriov $total_vfs &&
-      logger_print info "Detected: ConnectX-4 card"
+      logger_print info "Detected: $CX card"
     fi
 
     return $?
@@ -266,7 +266,7 @@ function validate_sriov () {
     set_modprobe_file $FALLBACK_NUM_VFS
     service openibd restart &> /dev/null
   fi
-  if [ $CX == 'ConnectX-4' ]; then
+  if [ $CX == 'ConnectX-4' ] || [ $CX == 'ConnectX-5' ]; then
     set_sriov $FALLBACK_NUM_VFS
   fi
 

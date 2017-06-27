@@ -27,7 +27,8 @@ MLNX_SECTION = 'mellanox-plugin'
 SETTINGS_FILE = '/etc/astute.yaml'
 PLUGIN_OVERRIDE_FILE = '/etc/hiera/override/plugins.yaml'
 MLNX_DRIVERS_LIST = { 'ConnectX-3': {'eth_driver' : 'mlx4_en', 'ib_driver' : 'eth_ipoib'},
-                      'ConnectX-4': {'eth_driver' : 'mlx5_core', 'ib_driver' : 'eth_ipoib'}}
+                      'ConnectX-4': {'eth_driver' : 'mlx5_core', 'ib_driver' : 'eth_ipoib'},
+                      'ConnectX-5': {'eth_driver' : 'mlx5_core', 'ib_driver' : 'eth_ipoib'}}
 MLNX_DRIVERS = set([MLNX_DRIVERS_LIST[card][net]
                     for card in MLNX_DRIVERS_LIST
                     for net in MLNX_DRIVERS_LIST[card]])
@@ -83,6 +84,17 @@ class MellanoxSettings(object):
             return card
 
     @classmethod
+    def get_card_type_by_interface_name(cls, ifc_name):
+        card_type = os.popen('mst status -v | grep {0} | grep -o ConnectX[0-9]*'
+                             .format(ifc_name)).readlines()
+        if len(card_type) == 1:
+            card_type = card_type[0].replace('ConnectX', 'ConnectX-').strip()
+            return card_type
+        else:
+            logging.error('No driver found for interface {0}'.format(ifc_name))
+            exit(1)
+
+    @classmethod
     def add_cx_card(cls):
         mlnx_interfaces = cls.mlnx_interfaces_section
         drivers = list()
@@ -90,7 +102,7 @@ class MellanoxSettings(object):
         mlnx = cls.get_mlnx_section()
         for network_type, ifc_dict in mlnx_interfaces.iteritems():
             if 'driver' in ifc_dict and network_type in ['private','management','storage']:
-              
+
               # The bond interfaces extend the original list,
               # otherwise, the interface is appended to the list.
               if(type(ifc_dict['driver']) is list):
@@ -115,7 +127,7 @@ class MellanoxSettings(object):
           mellanox_interface = interfaces_set[0]
           if current_driver in ETH_DRIVERS:
               mlnx['network_type'] = 'ethernet'
-              mlnx['cx_card'] = cls.get_card_type(current_driver)
+              mlnx['cx_card'] = cls.get_card_type_by_interface_name(mellanox_interface)
           elif current_driver in IB_DRIVERS:
               mlnx['network_type'] = 'infiniband'
               ibdev = os.popen('ibdev2netdev').readlines()
@@ -125,11 +137,7 @@ class MellanoxSettings(object):
                 return 0
               if ('bonds' in cls.data and mellanox_interface.startswith('bond')):
                   mellanox_interface = cls.data['bonds'][mellanox_interface]['interfaces'][0]
-              interface_line = [l for l in ibdev if mellanox_interface in l]
-              if interface_line and 'mlx5' in interface_line.pop():
-                  mlnx['cx_card'] = 'ConnectX-4'
-              else:
-                  mlnx['cx_card'] = 'ConnectX-3'
+              mlnx['cx_card'] = cls.get_card_type_by_interface_name(mellanox_interface)
 
           network_info_msg = 'Detected Network Type is: {0} '.format(mlnx['network_type'])
           card_info_msg = 'Detected Card Type is: {0} '.format(mlnx['cx_card'])
