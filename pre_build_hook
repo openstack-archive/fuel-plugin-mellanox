@@ -62,7 +62,9 @@ old_debs="${PLUGIN_DIR}/repositories/ubuntu/*.deb"
 deb_files="cirros-testvm-mellanox_0.3.2-ubuntu3_amd64.deb
            cirros-testvm-mellanox-ib_0.3.2-9_amd64.deb
            eswitchd_1.0.0-18_amd64.deb
-           mlnx-ofed-fuel_3.3-1.5.0.0_amd64.deb
+           mlnx-ofed-fuel_4.0-2.0.0.1_amd64.deb
            lldpd_0.9.1-0_amd64.deb
-           python-networking-mlnx_7.0.0-1_all.deb"
+           python-networking-mlnx_7.0.0-1_all.deb
+           openstack-liberty-vfd-compute-patch.deb
+           openstack-liberty-vfd-control-patch.deb"
 get_packages "deb" "$old_debs" "$deb_files"
