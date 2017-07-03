@@ -203,10 +203,43 @@
 # Copy SR-IOV user scripts to controllers
 - id: cp_sriov_user_scripts
   role: ['controller', 'primary-controller']
-  required_for: [post_deployment_end]
+  required_for: [add_hugepages_to_kernel]
   requires: [configure_mellanox_neo]
   type: shell
   parameters:
     cmd: cp -r ./user_scripts/* /sbin/
     timeout: 180
     retries: 10
+
+# Add hugepages to kernel params
+- id: add_hugepages_to_kernel
+  role: ['compute']
+  required_for: [vfd_installation]
+  requires: [configure_mellanox_neo]
+  type: shell
+  condition: "settings:mellanox-plugin.vfd.value == true"
+  parameters:
+    cmd: ./add_hugepages_kernel_params.sh
+    timeout: 180
+
+# Install VFD on compute nodes
+- id: vfd_installation
+  role: ['compute']
+  required_for: [vfd_openstack_patch]
+  requires: [add_hugepages_to_kernel]
+  type: shell
+  condition: "settings:mellanox-plugin.vfd.value == true"
+  parameters:
+    cmd: ./vfd_install.sh
+    timeout: 500
+
+# Install Openstack patches to work with VFD
+- id: vfd_openstack_patch
+  role: ['compute', 'controller', 'primary-controller']
+  required_for: [post_deployment_end]
+  requires: [vfd_installation]
+  type: shell
+  condition: "settings:mellanox-plugin.vfd.value == true"
+  parameters:
+    cmd: ./vfd_openstack_patch.sh
+    timeout: 180

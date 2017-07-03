@@ -5,6 +5,7 @@ class mellanox_openstack::compute_sriov (
   $network_type,
   $firewall_driver,
   $exclude_vf,
+  $vfd_enabled,
 ) {
 
   include nova::params
@@ -29,6 +30,11 @@ class mellanox_openstack::compute_sriov (
       hasstatus  => true,
       hasrestart => true,
     }
+  }
+
+  # Configure Nova to use VF agent
+  if ($vfd_enabled) {
+    nova_config { 'vf_agent/use_vf_agent': value => true}
   }
 
   # update [securitygroup] section in neutron

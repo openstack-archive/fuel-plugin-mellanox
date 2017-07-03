@@ -19,6 +19,7 @@ if ($mlnx['sriov']) {
     network_type        => $mlnx['network_type'],
     firewall_driver     => $firewall_driver,
     exclude_vf          => $exclude_vf,
+    vfd_enabled         => $mlnx['vfd'],
   }
 }
 
