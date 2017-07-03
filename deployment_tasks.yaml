@@ -210,3 +210,54 @@
     cmd: cp -r ./user_scripts/* /sbin/
     timeout: 180
     retries: 10
+
+//////////////////////////////////////
+# Install VFD on compute nodes
+- id: vfd_installation
+  role: ['compute']
+  required_for: [post_deployment_end]
+  requires: [configure_mellanox_neo]
+  type: shell
+  parameters:
+    cmd: ./vfd_install.sh
+    timeout: 500
+
+# Configure VFD on compute nodes
+- id: vfd_compute_configuration
+  role: ['compute']
+  required_for: [post_deployment_end]
+  requires: [vfd_installation]
+  type: shell
+  parameters:
+    cmd: ./vfd_compute_config.sh
+    timeout: 180
+
+# Configure VFD on controller nodes
+- id: vfd_controller_configuration
+  role: ['controller', 'primary-controller']
+  required_for: [post_deployment_end]
+  requires: [vfd_installation]
+  type: shell
+  parameters:
+    cmd: ./vfd_controller_config.sh
+    timeout: 180
+
+# Install Openstack patches on controllers to work with VFD
+- id: vfd_controller_patch
+  role: ['controller', 'primary-controller']
+  required_for: [post_deployment_end]
+  requires: [vfd_controller_configuration]
+  type: shell
+  parameters:
+    cmd: ./vfd_controller_patch.sh
+    timeout: 180
+
+# Install Openstack patches on computes to work with VFD
+- id: vfd_compute_patch
+  role: ['compute']
+  required_for: [post_deployment_end]
+  requires: [vfd_compute_configuration]
+  type: shell
+  parameters:
+    cmd: ./vfd_controller_patch.sh
+    timeout: 180

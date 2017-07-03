@@ -26,6 +26,16 @@ attributes:
       - condition: "settings:mellanox-plugin.sriov.value == false"
         message: "In order to change the number of virtual NICs, Neutron SR-IOV plugin should be checked."
 
+  vfd:
+    value: false
+    label: "Use VFD to manages VFs"
+    weight: 13
+    type: "checkbox"
+    description: "Use Virtual Functions Deamon (VFD) instead of Neutron SR-IOV Agent to manage Mellanox VFs"
+    restrictions:
+      - condition: "settings:mellanox-plugin.sriov.value == false"
+        message: "In order to use VFD, Neutron SR-IOV plugin should be checked."
+
   reboot_required:
     value: false
     label: "Reboot when maximum number of vfs configured by the user is greater than the one burned in FW."
