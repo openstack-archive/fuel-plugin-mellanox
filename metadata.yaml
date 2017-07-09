@@ -2,13 +2,13 @@
 name: mellanox-plugin
 
 # Human-readable name for your plugin
-title: Mellanox ConnectX-4 Openstack Features
+title: Mellanox ConnectX-5 Openstack Features
 
 # Plugin version
 version: 3.3.0
 
 # Description
-description: Enable features over Mellanox ConnectX-4 Adapters
+description: Enable features over Mellanox ConnectX-5 Adapters
 
 # Required fuel version
 fuel_version: ['8.0','9.0']
