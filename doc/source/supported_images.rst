@@ -15,4 +15,4 @@ Supported images
 |   3   | Cirros Mellanox    | 3.11.0-26-generic               |
 +-------+--------------------+---------------------------------+
 
-This Fuel Mellanox plugin ver. 3.2-3.2.1-1 is using MLNX_OFED_LINUX version 3.3-1.5.0.
+This Fuel Mellanox plugin ver. 3.2.1 is using MLNX_OFED_LINUX version 4.1-2.0.0.1

@@ -6,11 +6,11 @@ Known issues
 ============
 
 Issue 1
-    - Description: For custom (OEM) adapter cards based on Mellanox ConnectX-4 ICs, adapter firmware must be manually burnt prior to the installation with SR-IOV support
+    - Description: For custom (OEM) adapter cards based on Mellanox ConnectX-5 ICs, adapter firmware must be manually burnt prior to the installation with SR-IOV support
     - Workaround: See `the firmware installation instructions <http://www.mellanox.com/page/oem_firmware_download>`_.
 
 Issue 2
-    - Description: The number of SR-IOV virtual functions supported by Mellanox adapters is up to 31 on ConnectX-4 adapters (depends on your HW capabilities).
+    - Description: The number of SR-IOV virtual functions supported by Mellanox adapters is up to 31 on ConnectX-5 adapters (depends on your HW capabilities).
     - Workaround: NA
 
 Issue 3
