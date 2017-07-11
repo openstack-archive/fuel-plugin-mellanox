@@ -305,13 +305,19 @@ function set_sriov () {
         python ./configure_mellanox_vfs.py ${TOTAL_VFS}
       fi
 
-      # Make number of VFs and their MACs persistent
+      # Make number of VFs persistent
       persistent_ifup_script=/etc/network/if-up.d/persistent_mlnx_params
       echo "#!/bin/bash" > $persistent_ifup_script
       chmod +x $persistent_ifup_script
+      echo "# VFs Persistency" >> $persistent_ifup_script
       echo "if ! lspci | grep -i mellanox | grep -i virtual; then" >> $persistent_ifup_script
       echo "echo 0 > /sys/class/net/${device_up}/device/mlx5_num_vfs" >> $persistent_ifup_script
       echo "echo ${TOTAL_VFS} > /sys/class/net/${device_up}/device/mlx5_num_vfs" >> $persistent_ifup_script
+      echo "fi" >> $persistent_ifup_script
+
+      # Make the MAC for iser vf persistent
+      echo "# MACs Persistency" >> $persistent_ifup_script
+      echo 'if ip link show | grep "vf 0"| grep "MAC 00:00:00:00:00:00"; then' >> $persistent_ifup_script
       echo "python /etc/fuel/plugins/mellanox-plugin-*/configure_mellanox_vfs.py ${TOTAL_VFS}" >> $persistent_ifup_script
       echo "fi" >> $persistent_ifup_script
       echo "if [ -f /etc/init.d/tgt ]; then /etc/init.d/tgt force-reload; else exit 0; fi" >> $persistent_ifup_script
@@ -342,4 +348,7 @@ case $SCRIPT_MODE in
   ;;
 esac
 
+# Setting interfaces up
+for interface in `ifconfig -a | sed 's/[ \t].*//;/^\(lo\|\)$/d' | \
+sed 's/://'`;do ifconfig $interface up; done
 exit $?
