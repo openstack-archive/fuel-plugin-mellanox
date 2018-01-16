@@ -13,7 +13,7 @@ and storage features has been added.
 Starting with version 6.0, Fuel supports a Pluggable architecture.
 
 Mellanox Fuel plugin adds support for Mellanox high performance
-features for Mirantis Opesntack, over Ethernet and Infiniband networks,
+features for Mirantis Openstack, over Ethernet and Infiniband networks,
 built using ConnectX-3 family Adapters.
 
 Mellanox high performance features are currently includes Mellanox SR-IOV
