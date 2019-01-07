@@ -27,8 +27,8 @@ function create_vlan(){
     hex_vlan=".${current_vlan#0x}"
   fi
 
-  ib_create_child_path="/sys/class/net/$ib_interafce/create_child"
-  ib_delete_child_path="/sys/class/net/$ib_interafce/delete_child"
+  ib_create_child_path="/sys/class/net/$ib_interface/create_child"
+  ib_delete_child_path="/sys/class/net/$ib_interface/delete_child"
   eth_slaves_path="/sys/class/net/$eth_interface/eth/slaves"
   eth_vifs_path="/sys/class/net/$eth_interface/eth/vifs"
   ib_child="$ib_interface$hex_vlan.1"
@@ -61,7 +61,7 @@ function remove_vlan(){
 | grep -v 0xffff | grep -v 0x7fff | grep -v 0000`
 
   # Fixed paths
-  ib_delete_child_path="/sys/class/net/$ib_interafce/delete_child"
+  ib_delete_child_path="/sys/class/net/$ib_interface/delete_child"
   eth_slaves_path="/sys/class/net/$eth_interface/eth/slaves"
   eth_vifs_path="/sys/class/net/$eth_interface/eth/vifs"
 
@@ -86,15 +86,15 @@ function update(){
   do
     line_arr=( $line )
     eth_interface=${line_arr[0]}
-    ib_interafce=${line_arr[4]}
+    ib_interface=${line_arr[4]}
     current_mac=`ip link show $eth_interface | grep link | awk '{print $2}'`
 
     # Create default VLAN
     vlan="0"
-    create_vlan $eth_interface $ib_interafce $vlan $current_mac
+    create_vlan $eth_interface $ib_interface $vlan $current_mac
 
     # Create VLANs parameters
-    port_to_dev=( `ibdev2netdev |grep " $ib_interafce "` )
+    port_to_dev=( `ibdev2netdev |grep " $ib_interface "` )
     device=${port_to_dev[0]}
     port=${port_to_dev[2]}
     sm_vlans=`cat /sys/class/infiniband/$device/ports/$port/pkeys/* \
@@ -105,13 +105,13 @@ function update(){
     # Ensure supported VLANs
     for vlan in $sm_vlans;
     do
-      create_vlan $eth_interface $ib_interafce $vlan $current_mac
+      create_vlan $eth_interface $ib_interface $vlan $current_mac
     done
 
     # Delete unsupported VLANs
     for dec_vlan in $configured_dec_vlans;
     do
-      remove_vlan $eth_interface $ib_interafce $dec_vlan $current_mac $sm_vlans
+      remove_vlan $eth_interface $ib_interface $dec_vlan $current_mac $sm_vlans
     done
 
   done < "$ETH_IPOIB_INTERFACES"
