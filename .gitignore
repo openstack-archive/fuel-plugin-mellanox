@@ -1,5 +1,0 @@
-.build
-bootstrap/*.img
-repositories/*
-*.rpm
-*.deb

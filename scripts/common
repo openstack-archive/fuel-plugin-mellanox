@@ -1,6 +1,0 @@
-MELLANOX_PLUGIN_NAME="mellanox-plugin-*"
-PLUGIN_SCRIPTS_DIR=`echo /var/www/nailgun/plugins/$MELLANOX_PLUGIN_NAME/scripts/`
-FUEL_BOOTSTRAP_DIR="/var/www/nailgun/bootstrap*/"
-ORIG_BOOTSTRAP_VERSION_FILE="/opt/orig_bootstrap.txt"
-BOOTSTRAP_CLI_YAML="/etc/fuel-bootstrap-cli/fuel_bootstrap_cli.yaml"
-ORIG_BOOTSTRAP_CLI_YAML="/etc/fuel-bootstrap-cli/fuel_bootstrap_cli.yaml.orig"

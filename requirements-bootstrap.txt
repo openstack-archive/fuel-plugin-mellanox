@@ -1,4 +1,0 @@
-initramfs.img
-linux
-.ofed
-.kernel
